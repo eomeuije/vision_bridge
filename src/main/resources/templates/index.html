@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Bridge</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .translator-container {
+            margin: 50px;
+        }
+        .translator-area {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container translator-container">
+    <h1 class="text-center">Vision Bridge - 점자 번역기</h1>
+    <div class="row">
+        <div class="col-md-6 translator-area">
+            <h4>점자</h4>
+            <textarea id="sourceText" class="form-control" rows="10" placeholder="여기에 입력하세요..."></textarea>
+            <button id="translateButton" class="btn btn-primary mt-3">번역</button>
+        </div>
+        <div class="col-md-6 translator-area">
+            <h4>비점자</h4>
+            <textarea id="translatedText" class="form-control" rows="10" readonly placeholder="번역 결과가 여기에 표시됩니다..."></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+        document.getElementById('translateButton').addEventListener('click', function() {
+            const sourceText = document.getElementById('sourceText').value;
+
+            //api
+
+            document.getElementById('translatedText').value = sourceText;
+        });
+    </script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.11/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
