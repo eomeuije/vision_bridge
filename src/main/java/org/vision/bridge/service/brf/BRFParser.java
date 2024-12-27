@@ -47,7 +47,7 @@ public class BRFParser {
         charToBRFMap.put('⠧', 'v');
         charToBRFMap.put('⠨', '.');
         charToBRFMap.put('⠩', '%');
-        charToBRFMap.put('⠪', '[');
+        charToBRFMap.put('⠪', '{');
         charToBRFMap.put('⠫', '$');
         charToBRFMap.put('⠬', '+');
         charToBRFMap.put('⠭', 'x');
@@ -64,7 +64,7 @@ public class BRFParser {
         charToBRFMap.put('⠸', '_');
         charToBRFMap.put('⠹', '?');
         charToBRFMap.put('⠺', 'w');
-        charToBRFMap.put('⠻', ']');
+        charToBRFMap.put('⠻', '}');
         charToBRFMap.put('⠼', '#');
         charToBRFMap.put('⠽', 'y');
         charToBRFMap.put('⠾', ')');
@@ -116,6 +116,7 @@ public class BRFParser {
         BRFToCharMap.put('.', '⠨');
         BRFToCharMap.put('%', '⠩');
         BRFToCharMap.put('[', '⠪');
+        BRFToCharMap.put('{', '⠪');
         BRFToCharMap.put('$', '⠫');
         BRFToCharMap.put('+', '⠬');
         BRFToCharMap.put('x', '⠭');
@@ -134,6 +135,7 @@ public class BRFParser {
         BRFToCharMap.put('?', '⠹');
         BRFToCharMap.put('w', '⠺');
         BRFToCharMap.put(']', '⠻');
+        BRFToCharMap.put('}', '⠻');
         BRFToCharMap.put('#', '⠼');
         BRFToCharMap.put('y', '⠽');
         BRFToCharMap.put(')', '⠾');
@@ -146,6 +148,9 @@ public class BRFParser {
     }
 
     public char getBraille(char brf) {
+        if (brf >= 'A' && brf <= 'Z') {
+            brf = Character.toLowerCase(brf);
+        }
         return BRFToCharMap.get(brf);
     }
 }
