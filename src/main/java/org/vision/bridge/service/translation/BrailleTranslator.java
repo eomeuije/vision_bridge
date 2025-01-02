@@ -1,5 +1,8 @@
 package org.vision.bridge.service.translation;
 
+import org.vision.bridge.service.utils.EnglishUtils;
+import org.vision.bridge.service.utils.JamoUtils;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,10 +86,6 @@ public class BrailleTranslator {
         koreanMap.put("ㅢ", "⠺");
     }
 
-    private static final Map<String, String> englishMap = new HashMap<>();
-    private static final Map<Number, String> numberMap = new HashMap<>();
-    private static final Map<String, String> specialCharMap = new HashMap<>();
-
     public static int getCharType(char c) {
         int type;
         if (isKorean(c)) {
@@ -108,22 +107,93 @@ public class BrailleTranslator {
     public static String translate(String text) {
         StringBuilder braille = new StringBuilder();
         String[] words = text.split(" ");
+        int wordType = -1;
+        boolean isUpperOverThree = false, isQuote = false;
         for (int i = 0; i < words.length; i++) {
             char[] chars = words[i].toCharArray();
             StringBuilder word = new StringBuilder();
-            int wordType = -1;
             for (int j = 0; j < chars.length; j++) {
                 int type = getCharType(chars[j]);
+                if (type == NUMBER && wordType == -1) { // 제 11절 40항
+                    braille.append("⠼");
+                }
+                if (j + 1 < chars.length && wordType == NUMBER && (chars[j] == '.' || chars[j] == ',') && NUMBER == getCharType(chars[j + 1])) {
+                    type = NUMBER;
+                }
                 if (wordType != -1 && type != wordType) {
-                    braille.append(_translate(word, type));
+                    braille.append(_translate(word, wordType));
+                    if (type == NUMBER) { // 제 11절 40항
+                        braille.append("⠼");
+                    }
+                    if (type == ENGLISH) {
+                        braille.append("⠴");
+                        int countUpperWord = countUpperWord(words, i);
+                        if (countUpperWord >= 3) {
+                            braille.append("⠠⠠⠠");
+                            for (int o = countUpperWord; o > 0; o--) {
+                                words[i + o] = words[i + o].toLowerCase();
+                            }
+                            chars = String.valueOf(chars).toLowerCase().toCharArray();
+                            isUpperOverThree = true;
+                        }
+                    }
+                    if (wordType == ENGLISH) {
+                        if (isUpperOverThree) {
+                            braille.append("⠠⠄");
+                            isUpperOverThree = false;
+                        }
+                        if (!isQuote // 제 34항
+                            && (chars[j] != ',' && chars[j] != ':' && chars[j] != ';' && chars[j] != '―') // 제 10절 33항
+                            && (chars[j] != '.' && chars[j] != '?' && chars[j] != '!' && chars[j] != '…')  // 제 10절 33항 다만
+                            && (type != NUMBER) // 제 35항
+                        )
+                            braille.append("⠲");
+                    }
+                    if (wordType == NUMBER && type == KOREAN) { // 제 44항 다만
+                        String target = String.valueOf(chars[j]);
+                        char cho = JamoUtils.getCho(target);
+                        String removedCho = JamoUtils.removeCho(target);
+                        if (cho  == 'ㄴ' || cho == 'ㄷ' || cho == 'ㅁ' || cho == 'ㅋ' || cho == 'ㅌ' || cho == 'ㅍ' || cho == 'ㅎ' || removedCho.equals("운")) {
+                            braille.append(" ");
+                        }
+                    }
                     word = new StringBuilder();
-                } else {
                     word.append(chars[j]);
+                } else {
+                    if (type != wordType && type == ENGLISH) {
+                        braille.append("⠴");
+                        int countUpperWord = countUpperWord(words, i);
+                        if (countUpperWord >= 3) {
+                            braille.append("⠠⠠⠠");
+                            for (int o = countUpperWord - 1; o >= 0; o--) {
+                                words[i + o] = words[i + o].toLowerCase();
+                            }
+                            chars = String.valueOf(chars).toLowerCase().toCharArray();
+                            isUpperOverThree = true;
+                        }
+                    }
+                    word.append(chars[j]);
+                }
+                if (type == SPECIAL_CHAR) {
+                    if (chars[j] == '"' || chars[j] == '\'') {
+                        isQuote = !isQuote;
+                    } else if (chars[j] == '(' || chars[j] == '{' || chars[j] == '[') {
+                        isQuote = true;
+                    } else if (chars[j] == ')' || chars[j] == '}' || chars[j] == ']') {
+                        isQuote = false;
+                    }
                 }
                 wordType = type;
             }
             braille.append(_translate(word, wordType));
-            braille.append(" ");
+            if (i + 1 != words.length)
+                braille.append(" ");
+        }
+        if (wordType == ENGLISH) {
+            if (isUpperOverThree) {
+                braille.append("⠠⠄");
+            }
+            braille.append("⠲");
         }
         return braille.toString();
     }
@@ -132,8 +202,12 @@ public class BrailleTranslator {
         String braille;
         if (type == KOREAN) {
             braille = koreanTranslate(word.toString());
+        } else if (type == ENGLISH) {
+            braille = englishTranslate(word.toString());
+        } else if (type == NUMBER) {
+            braille = numberTranslate(word.toString());
         } else {
-            braille = "";
+            braille = specialCharTranslate(word.toString());
         }
         return braille;
     }
@@ -317,12 +391,13 @@ public class BrailleTranslator {
             }
             if (i + 1 < charArray.length && splitOne.get(2).equals("")) { // 제 5절 11항
                 String next = String.valueOf(charArray[i + 1]);
-                if (JamoUtils.removeJong(next).equals("예")
-                    || (JamoUtils.removeJong(next).equals("애") &&
-                        splitOne.get(1).equals("ㅑ")
+                String jong = JamoUtils.removeJong(next);
+                if ( (jong.equals("예")
+                    || (jong.equals("애") ) &&
+                        (splitOne.get(1).equals("ㅑ")
                     || splitOne.get(1).equals("ㅘ")
                     || splitOne.get(1).equals("ㅜ")
-                    || splitOne.get(1).equals("ㅝ"))
+                    || splitOne.get(1).equals("ㅝ")) )
                 ) {
                     stringBuilder.append("⠤");
                 }
@@ -367,5 +442,172 @@ public class BrailleTranslator {
         } else {
             return null;
         }
+    }
+
+    private static final Map<Character, String> englishMap = new HashMap<>();
+    static {
+        englishMap.put('a', "⠁"); // 제 10절 28항
+        englishMap.put('b', "⠃");
+        englishMap.put('c', "⠉");
+        englishMap.put('d', "⠙");
+        englishMap.put('e', "⠑");
+        englishMap.put('f', "⠋");
+        englishMap.put('g', "⠛");
+        englishMap.put('h', "⠓");
+        englishMap.put('i', "⠊");
+        englishMap.put('j', "⠚");
+        englishMap.put('k', "⠅");
+        englishMap.put('l', "⠇");
+        englishMap.put('m', "⠍");
+        englishMap.put('n', "⠝");
+        englishMap.put('o', "⠕");
+        englishMap.put('p', "⠏");
+        englishMap.put('q', "⠟");
+        englishMap.put('r', "⠗");
+        englishMap.put('s', "⠎");
+        englishMap.put('t', "⠞");
+        englishMap.put('u', "⠥");
+        englishMap.put('v', "⠧");
+        englishMap.put('w', "⠺");
+        englishMap.put('x', "⠭");
+        englishMap.put('y', "⠽");
+        englishMap.put('z', "⠵");
+        englishMap.put('A', "⠠⠁");
+        englishMap.put('B', "⠠⠃");
+        englishMap.put('C', "⠠⠉");
+        englishMap.put('D', "⠠⠙");
+        englishMap.put('E', "⠠⠑");
+        englishMap.put('F', "⠠⠋");
+        englishMap.put('G', "⠠⠛");
+        englishMap.put('H', "⠠⠓");
+        englishMap.put('I', "⠠⠊");
+        englishMap.put('J', "⠠⠚");
+        englishMap.put('K', "⠠⠅");
+        englishMap.put('L', "⠠⠇");
+        englishMap.put('M', "⠠⠍");
+        englishMap.put('N', "⠠⠝");
+        englishMap.put('O', "⠠⠕");
+        englishMap.put('P', "⠠⠏");
+        englishMap.put('Q', "⠠⠟");
+        englishMap.put('R', "⠠⠗");
+        englishMap.put('S', "⠠⠎");
+        englishMap.put('T', "⠠⠞");
+        englishMap.put('U', "⠠⠥");
+        englishMap.put('V', "⠠⠧");
+        englishMap.put('W', "⠠⠺");
+        englishMap.put('X', "⠠⠭");
+        englishMap.put('Y', "⠠⠽");
+        englishMap.put('Z', "⠠⠵");
+    }
+
+    // 약자 규정 https://test.kbuwel.or.kr/Braille/Boards/ExamFiles/Details/31?Page=5
+    private static String englishTranslate(String word) {
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] charArray = word.toCharArray();
+        for (int i = 0; i < charArray.length; i++) {
+            for (int j = i; j < charArray.length && charArray[j] >= 'A' && charArray[j] <= 'Z'; j++) {
+                if (j - i == 1) {
+                    stringBuilder.append("⠠⠠");
+                    charArray[j] = Character.toLowerCase(charArray[j]);
+                    charArray[j - 1] = Character.toLowerCase(charArray[j - 1]);
+                } else if (j - i > 1){
+                    charArray[j] = Character.toLowerCase(charArray[j]);
+                }
+            }
+            stringBuilder.append(englishMap.get(charArray[i]));
+        }
+        return stringBuilder.toString();
+    }
+
+    private static int countUpperWord(String[] words, int startIndex) {
+        int i = startIndex;
+        for (; i < words.length; i++) {
+            if (!EnglishUtils.isAllUpperCase(words[i])) {
+                return i;
+            }
+        }
+        return i;
+    }
+
+    private static final Map<Character, String> numberMap = new HashMap<>();
+    static {
+        numberMap.put('1', "⠁"); // 제 11절 40항
+        numberMap.put('2', "⠃");
+        numberMap.put('3', "⠉");
+        numberMap.put('4', "⠙");
+        numberMap.put('5', "⠑");
+        numberMap.put('6', "⠋");
+        numberMap.put('7', "⠛");
+        numberMap.put('8', "⠓");
+        numberMap.put('9', "⠊");
+        numberMap.put('0', "⠚");
+        numberMap.put(',', "⠂");
+        numberMap.put('.', "⠲");
+    }
+
+    private static String numberTranslate(String word) {
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] charArray = word.toCharArray();
+        for (int i = 0; i < charArray.length; i++) {
+            stringBuilder.append(numberMap.get(charArray[i]));
+        }
+        return stringBuilder.toString();
+    }
+
+    // 특수문자는
+    private static final Map<Character, String> specialCharMap = new HashMap<>();
+    static {
+        specialCharMap.put('+', "⠢"); // 제 44항
+        specialCharMap.put('-', "⠔");
+        specialCharMap.put('×', "⠡");
+        specialCharMap.put('÷', "⠌⠌");
+        specialCharMap.put('=', "⠒⠒");
+        specialCharMap.put('>', "⠢⠢");
+        specialCharMap.put('<', "⠔⠔");
+        specialCharMap.put('.', "⠲"); // 제 13절 49항
+        specialCharMap.put('?', "⠦");
+        specialCharMap.put('!', "⠖");
+        specialCharMap.put(',', "⠐");
+        specialCharMap.put('·', "⠐⠆");
+        specialCharMap.put(':', "⠐⠂");
+        specialCharMap.put(';', "⠰⠆");
+        specialCharMap.put('/', "⠸⠌");
+        specialCharMap.put('…', "⠠⠠⠠");
+        specialCharMap.put('“', "⠦");
+        specialCharMap.put('"', "⠦");
+        specialCharMap.put('”', "⠴");
+        specialCharMap.put('‘', "⠠⠦");
+        specialCharMap.put('\'', "⠠⠦");
+        specialCharMap.put('’', "⠴⠄");
+        specialCharMap.put('(', "⠦⠄");
+        specialCharMap.put(')', "⠠⠴");
+        specialCharMap.put('{', "⠦⠂");
+        specialCharMap.put('}', "⠐⠴");
+        specialCharMap.put('[', "⠦⠆");
+        specialCharMap.put(']', "⠰⠴");
+        specialCharMap.put('『', "⠰⠦");
+        specialCharMap.put('』', "⠴⠆");
+        specialCharMap.put('「', "⠐⠦");
+        specialCharMap.put('」', "⠴⠂");
+        specialCharMap.put('《', "⠰⠶");
+        specialCharMap.put('》', "⠶⠆");
+        specialCharMap.put('〈', "⠐⠶");
+        specialCharMap.put('〉', "⠶⠂");
+        specialCharMap.put('―', "⠤⠤");
+        specialCharMap.put('∼', "⠈⠔");
+        specialCharMap.put('̊', "⠠⠤");
+        specialCharMap.put('_', "⠤⠄");
+        specialCharMap.put('○', "⠸⠴⠇");
+        specialCharMap.put('△', "⠸⠬⠇");
+        specialCharMap.put('□', "⠸⠶⠇");
+    }
+
+    private static String specialCharTranslate(String word) {
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] charArray = word.toCharArray();
+        for (int i = 0; i < charArray.length; i++) {
+            stringBuilder.append(specialCharMap.getOrDefault(charArray[i], ""));
+        }
+        return stringBuilder.toString();
     }
 }

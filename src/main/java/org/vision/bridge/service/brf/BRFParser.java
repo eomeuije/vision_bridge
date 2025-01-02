@@ -6,6 +6,7 @@ import java.util.Map;
 public class BRFParser {
     private static final Map<Character, Character> charToBRFMap = new HashMap<>();
     static {
+        charToBRFMap.put(' ', ' ');
         charToBRFMap.put('⠁', 'a');
         charToBRFMap.put('⠂', '1');
         charToBRFMap.put('⠃', 'b');
@@ -73,6 +74,7 @@ public class BRFParser {
 
     private static final Map<Character, Character> BRFToCharMap = new HashMap<>();
     static {
+        BRFToCharMap.put(' ', ' ');
         BRFToCharMap.put('a', '⠁');
         BRFToCharMap.put('1', '⠂');
         BRFToCharMap.put('b', '⠃');
@@ -152,5 +154,21 @@ public class BRFParser {
             brf = Character.toLowerCase(brf);
         }
         return BRFToCharMap.get(brf);
+    }
+
+    public String translateBRF2Braille(String brf) {
+        StringBuilder braille = new StringBuilder();
+        for (char c : brf.toCharArray()) {
+            braille.append(getBraille(c));
+        }
+        return braille.toString();
+    }
+
+    public String translateBraille2BRF(String braille) {
+        StringBuilder brf = new StringBuilder();
+        for (char c : braille.toCharArray()) {
+            brf.append(getBRF(c));
+        }
+        return brf.toString();
     }
 }

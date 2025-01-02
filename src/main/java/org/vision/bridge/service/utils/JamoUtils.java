@@ -1,4 +1,4 @@
-package org.vision.bridge.service.translation;
+package org.vision.bridge.service.utils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,14 +38,24 @@ public class JamoUtils {
         return List.of(target, "", "");
     }
 
-    public static String getJung(String target) {
+    public static char getJung(String target) {
         List<String> strings = splitOne(target);
-        return strings.get(1);
+        return strings.get(1).toCharArray()[0];
     }
 
     public static String removeJong(String target) {
         List<String> strings = splitOne(target);
-        return combine(strings.get(0), strings.get(1), strings.get(2));
+        return combine(strings.get(0), strings.get(1), "");
+    }
+
+    public static String removeCho(String target) {
+        List<String> strings = splitOne(target);
+        return combine("ㅇ", strings.get(1), strings.get(2));
+    }
+
+    public static char getCho(String target) {
+        List<String> strings = splitOne(target);
+        return strings.get(0).toCharArray()[0];
     }
 
     public static String combine(String cho, String jung, String jong) {
