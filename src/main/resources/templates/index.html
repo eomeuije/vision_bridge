@@ -33,14 +33,32 @@
 </div>
 
 <script>
-        document.getElementById('translateButton').addEventListener('click', function() {
-            const sourceText = document.getElementById('sourceText').value;
+    document.getElementById('translateButton').addEventListener('click', function() {
+        const sourceText = document.getElementById('sourceText').value;
 
-            //api
-
-            document.getElementById('translatedText').value = sourceText;
-        });
-    </script>
+        // /api/translate API로 요청을 보냄
+        fetch('/api/translate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sourceText: sourceText }) // JSON 형식으로 데이터를 전송
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text(); // 서버에서 반환된 텍스트를 읽음
+            })
+            .then(data => {
+                document.getElementById('translatedText').value = data; // 결과를 번역창에 표시
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('서버 상태를 확인하세요.');
+            });
+    });
+</script>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.11/dist/umd/popper.min.js"></script>
