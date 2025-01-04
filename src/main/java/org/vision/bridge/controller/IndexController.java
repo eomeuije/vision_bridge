@@ -11,4 +11,9 @@ public class IndexController {
         return "index";
     }
 
+    @GetMapping("/help")
+    public String helpPage() {
+        return "help";
+    }
+
 }
