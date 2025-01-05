@@ -11,15 +11,15 @@
 <body>
 <!-- 로고, 제목, 사용법 버튼 영역 -->
 <div class="header d-flex align-items-center justify-content-between">
-    <!-- 로고 영역 (탭 순서 제외) -->
+    <!-- 로고 영역 -->
     <div class="logo" aria-hidden="true">
         <i class="fa-solid fa-eye logo-icon"></i>
     </div>
 
-    <!-- 제목 영역 (가운데 배치) -->
+    <!-- 제목 영역 -->
     <h1 id="mainTitle" tabindex="1">Vision Bridge</h1>
 
-    <!-- 사용법 버튼 영역 (오른쪽 배치) -->
+    <!-- 사용법 버튼 -->
     <button id="helpButton" class="btn help-button" aria-label="Vision Bridge 사용법 보기" tabindex="2">
         <i class="fa-regular fa-circle-question"></i> 사용법
     </button>
@@ -36,14 +36,14 @@
             </h4>
             <textarea id="inputText" class="form-control" rows="7" placeholder="점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요." aria-label="번역 입력창" tabindex="5"></textarea>
 
-            <!-- 이미지 업로드, 문서 업로드 버튼들 -->
             <div class="file-upload">
-                <button class="btn btn-secondary" aria-label="이미지 파일 업로드" onclick="document.getElementById('imageUpload').click()" tabindex="10">
+                <!-- 이미지 업로드 버튼 -->
+                <button class="shared-button" aria-label="이미지 파일 업로드" onclick="document.getElementById('imageUpload').click()" tabindex="11">
                     <i class="fa-regular fa-image"></i> 이미지 업로드
                 </button>
                 <input type="file" id="imageUpload" style="display: none;">
-
-                <button class="btn btn-secondary" aria-label="문서 파일 업로드" onclick="document.getElementById('documentUpload').click()" tabindex="11">
+                <!-- 문서 업로드 버튼 -->
+                <button class="shared-button" aria-label="문서 파일 업로드" onclick="document.getElementById('documentUpload').click()" tabindex="12">
                     <i class="fa-regular fa-folder-open"></i> 문서 업로드
                 </button>
                 <input type="file" id="documentUpload" style="display: none;">
@@ -52,22 +52,26 @@
 
         <!-- 양방향 화살표 -->
         <div class="arrow-area">
-            <i class="arrow-icon fa-solid fa-arrow-right-arrow-left" id="translateArrow" role="button" aria-label="번역 방향 변경" tabindex="5"></i>
-            <button id="translateButton" class="btn btn-primary translate-button" aria-label="번역 실행" tabindex="6">번역</button>
+            <i class="arrow-icon fa-solid fa-arrow-right-arrow-left" id="translateArrow" role="button" aria-label="번역 방향 변경" tabindex="6"></i>
+            <button id="translateButton" class="btn btn-primary translate-button" aria-label="번역 실행" tabindex="7">번역</button>
         </div>
 
         <!-- 텍스트 출력 영역 -->
         <div class="translator-area">
             <h4>
-                <span class="lang-toggle" id="brailleToText" role="tab" aria-selected="false" aria-controls="outputText" tabindex="7">점자</span>
-                <span class="lang-toggle active" id="textToBraille" role="tab" aria-selected="true" aria-controls="outputText" tabindex="8">비점자</span>
+                <span class="lang-toggle" id="brailleToText" role="tab" aria-selected="false" aria-controls="outputText" tabindex="8">점자</span>
+                <span class="lang-toggle active" id="textToBraille" role="tab" aria-selected="true" aria-controls="outputText" tabindex="9">비점자</span>
             </h4>
-            <textarea id="outputText" class="form-control" rows="7" readonly placeholder="번역 결과가 비점자로 표시됩니다." aria-label="번역 결과창" tabindex="9"></textarea>
+            <textarea id="outputText" class="form-control" rows="7" readonly placeholder="번역 결과가 비점자로 표시됩니다." aria-label="번역 결과창" tabindex="10"></textarea>
 
-            <!-- BRF 다운로드 버튼 -->
             <div class="action-buttons">
-                <button id="downloadButton" class="btn btn-outline-secondary" aria-label="BRF 파일 다운로드" tabindex="13">
+                <!-- BRF 다운로드 버튼 -->
+                <button id="downloadButton" class="shared-button" aria-label="BRF 파일 다운로드" tabindex="13">
                     <i class="fa-regular fa-circle-down"></i> BRF 다운로드
+                </button>
+                <!-- 음성 출력 버튼 -->
+                <button id="voiceButton" class="shared-button" aria-label="번역 결과 음성 출력" tabindex="14">
+                    <i class="fa-solid fa-play"></i> 번역 결과 음성 출력
                 </button>
             </div>
         </div>
@@ -125,24 +129,6 @@
         }
     });
 
-    // BRF 다운로드 버튼
-    document.getElementById('downloadButton').addEventListener('click', function () {
-        const content = outputText.value;
-        if (!content) {
-            alert('다운로드할 내용이 없습니다.');
-            return;
-        }
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'translated.brf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
     // 사용법 버튼
     document.getElementById('helpButton').addEventListener('click', function () {
         window.open('/help', '_blank', 'width=600,height=400');
@@ -188,6 +174,37 @@
                 alert('번역 요청 중 문제가 발생했습니다.');
             });
     });
+
+    // BRF 다운로드 버튼
+    document.getElementById('downloadButton').addEventListener('click', function () {
+        const content = outputText.value;
+        if (!content) {
+            alert('다운로드할 내용이 없습니다.');
+            return;
+        }
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'translated.brf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // 음성 출력 버튼
+    document.getElementById('voiceButton').addEventListener('click', function () {
+        const text = document.getElementById('outputText').value; // 출력 텍스트 가져오기
+        if (text) {
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = 'ko-KR'; // 한국어로 설정
+            window.speechSynthesis.speak(speech); // 음성 출력
+        } else {
+            alert('번역 결과가 없습니다.');
+        }
+    });
+
 </script>
 </body>
 </html>
