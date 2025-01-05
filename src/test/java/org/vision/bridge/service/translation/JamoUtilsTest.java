@@ -13,5 +13,6 @@ class JamoUtilsTest {
     @Test
     void combine() {
         System.out.println(JamoUtils.combine("ㅎ", "ㅢ", ""));
+        System.out.println(JamoUtils.combine("ㅎ", "", ""));
     }
 }

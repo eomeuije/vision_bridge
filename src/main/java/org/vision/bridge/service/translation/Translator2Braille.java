@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class BrailleTranslator {
+public class Translator2Braille {
 
     private static final int KOREAN = 1;
     private static final int ENGLISH = 2;
@@ -15,7 +15,6 @@ public class BrailleTranslator {
     private static final int SPECIAL_CHAR = 4;
 
     private static final Map<String, String> koreanMap = new HashMap<>();
-
     static {
         koreanMap.put("ㄱ", "⠈"); // 제 1절 1항
         koreanMap.put("ㄴ", "⠉");
@@ -219,16 +218,20 @@ public class BrailleTranslator {
         abbMap.put("까", "⠠⠫"); // 제 6절 16항
         abbMap.put("나", "⠉");
         abbMap.put("다", "⠊");
+        abbMap.put("따", "⠠⠊");
         abbMap.put("마", "⠑");
         abbMap.put("바", "⠘");
+        abbMap.put("빠", "⠠⠘");
         abbMap.put("사", "⠇");
         abbMap.put("싸", "⠠⠇");
         abbMap.put("자", "⠨");
+        abbMap.put("짜", "⠠⠨");
         abbMap.put("카", "⠋");
         abbMap.put("타", "⠓");
         abbMap.put("파", "⠙");
         abbMap.put("하", "⠚");
         abbMap.put("억", "⠹"); // 제 6절 15항
+        abbMap.put("얶", "⠹⠁");
         abbMap.put("언", "⠾");
         abbMap.put("얼", "⠞");
         abbMap.put("연", "⠡");
@@ -243,7 +246,9 @@ public class BrailleTranslator {
         abbMap.put("을", "⠮");
         abbMap.put("인", "⠟");
         abbMap.put("것", "⠸⠎");
+        abbMap.put("겄", "⠸⠎⠄");
         abbMap.put("껏", "⠠⠸⠎");
+        abbMap.put("껐", "⠠⠸⠎⠄");
         abbMap.put("성", "⠠⠻"); // 제 6절 17항
         abbMap.put("썽", "⠠⠠⠻");
         abbMap.put("정", "⠨⠻");

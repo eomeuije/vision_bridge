@@ -81,10 +81,45 @@ public class JamoUtils {
                 break;
             }
         }
-        if (choIndex == -1 || jungIndex == -1) {
+        if (choIndex == -1 && jungIndex == -1) {
+            return jong;
+        } else if (jungIndex == -1 && jongIndex == 0) {
+            return cho;
+        } else if (choIndex == -1 && jongIndex == 0){
+            return jung;
+        } else if (choIndex == -1 || jungIndex == -1) {
             return ""; // 초성 또는 중성이 없으면 빈 문자열 반환
         }
         int unicode = 0xAC00 + (choIndex * 21 * 28) + (jungIndex * 28) + jongIndex;
         return String.valueOf(Character.toChars(unicode));
+    }
+
+    public static boolean isOnlyJamo(String target) {
+        for (char c : target.toCharArray()) {
+            if (!isOnlyJamoOne(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean isOnlyJamoOne(char target) {
+        for (String s : CHOSUNG) {
+            if (target == s.charAt(0)) {
+                return true;
+            }
+        }
+        for (String s : JUNGSUNG) {
+            if (target == s.charAt(0)) {
+                return true;
+            }
+        }
+        for (String s : JONGSUNG) {
+            if (s.isEmpty()) continue;
+            if (target == s.charAt(0)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

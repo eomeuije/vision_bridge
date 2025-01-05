@@ -100,6 +100,7 @@ public class BRFParser {
         BRFToCharMap.put('6', '⠖');
         BRFToCharMap.put('r', '⠗');
         BRFToCharMap.put('^', '⠘');
+        BRFToCharMap.put('~', '⠘');
         BRFToCharMap.put('d', '⠙');
         BRFToCharMap.put('j', '⠚');
         BRFToCharMap.put('g', '⠛');
