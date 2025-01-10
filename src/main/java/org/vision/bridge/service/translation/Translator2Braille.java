@@ -113,7 +113,7 @@ public class Translator2Braille {
             StringBuilder word = new StringBuilder();
             for (int j = 0; j < chars.length; j++) {
                 int type = getCharType(chars[j]);
-                if (type == NUMBER && wordType == -1) { // 제 11절 40항
+                if (type == NUMBER && (wordType == -1 || (wordType == NUMBER && j == 0)) ) { // 제 11절 40항 + 숫자를 뛰어쓸때 항상 숫자 기호를 붙임
                     braille.append("⠼");
                 }
                 if (j + 1 < chars.length && wordType == NUMBER && (chars[j] == '.' || chars[j] == ',') && NUMBER == getCharType(chars[j + 1])) {
@@ -559,7 +559,6 @@ public class Translator2Braille {
         return stringBuilder.toString();
     }
 
-    // 특수문자는
     private static final Map<Character, String> specialCharMap = new HashMap<>();
     static {
         specialCharMap.put('+', "⠢"); // 제 44항

@@ -116,5 +116,6 @@ class BrailleTranslatorTest {
         x = brfParser.translateBraille2BRF(translate);
         System.out.println(translate);
         Assertions.assertEquals(x, "s\"qoc1o`,r\"u`.n.}iys/!`i7,oncz s\"qoi!n@n`@}s\"!`,,{\"<@u`j<:/i482%3,?.m7`.).ob8'#aihh,0\"`#gj,.x ;<5.u;0".replaceAll("`", " "));
+
     }
 }
