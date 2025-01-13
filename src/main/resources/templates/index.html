@@ -41,7 +41,7 @@
                 <button class="shared-button" aria-label="이미지 파일 업로드" onclick="document.getElementById('imageUpload').click()" tabindex="11">
                     <i class="fa-regular fa-image"></i> 이미지 업로드
                 </button>
-                <input type="file" id="imageUpload" style="display: none;">
+                <input type="file" id="imageUpload" accept="image/*" enctype="multipart/form-data" style="display: none;">
                 <!-- 문서 업로드 버튼 -->
                 <button class="shared-button" aria-label="문서 파일 업로드" onclick="document.getElementById('documentUpload').click()" tabindex="12">
                     <i class="fa-regular fa-folder-open"></i> 문서 업로드
@@ -110,7 +110,7 @@
 
         // 입력 및 출력 플레이스홀더 전환
         inputText.placeholder = isBrailleToText
-            ? "점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요."
+            ? "점자를 입력하세요.   또는 문서/이미지를 드래그 앤 드롭하세요."
             : "비점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요.";
         outputText.placeholder = isBrailleToText
             ? "번역 결과가 비점자로 표시됩니다."
@@ -134,13 +134,76 @@
         window.open('/help', '_blank', 'width=600,height=400');
     });
 
+    const inputTextElement = document.getElementById('inputText');
+
+    inputTextElement.addEventListener('dragover', (event) => {
+        event.preventDefault();  // 기본 동작 방지
+        inputTextElement.style.backgroundColor = "#e0e0e0";  // 드래그 중 배경색 변경
+    });
+
+    // 드래그 종료 후 배경색 원래대로
+    inputTextElement.addEventListener('dragleave', () => {
+        inputTextElement.style.backgroundColor = "";
+    });
+
+    // 파일 드랍시 이벤트
+    inputTextElement.addEventListener('drop', (event) => {
+        event.preventDefault();  // 기본 동작 방지
+        inputTextElement.style.backgroundColor = "";  // 배경색 원래대로
+        const file = event.dataTransfer.files[0];  // 드롭된 파일 가져오기
+
+        if (!file.type) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (fileExtension === 'pdf') {
+                file.type = 'application/pdf';  // 수동으로 텍스트 파일 타입 설정
+            } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                file.type = 'image/' + fileExtension;  // 이미지 파일 타입 설정
+            }
+        }
+
+        // 파일이 텍스트 파일인 경우
+        if (file && file.type === 'application/pdf') {
+            documentUploadEvent(file);
+        }
+        // 파일이 이미지 파일인 경우
+        else if (file && file.type.startsWith('image/')) {
+            imageUploadEvent(file);
+        } else {
+            alert("지원되지 않는 파일 형식입니다.");
+        }
+    });
+
     // 이미지 업로드
     document.getElementById('imageUpload').addEventListener('change', function (event) {
         const file = event.target.files[0];
-        if (file) {
-            alert(`이미지 파일 선택: ${file.name}`);
-        }
+        imageUploadEvent(file, event);
     });
+
+    function imageUploadEvent(file, event) {
+        if (!file) {
+            return;
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+
+        fetch('/ocr', {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (!response.ok) {
+              throw new Error("업로드 실패");
+            }
+            return response.text();
+        })
+        .then(data => {
+            document.getElementById("inputText").value = data;
+            event ? event.target.value = '' : null;
+        })
+        .catch(error => {
+            alert(error.message);
+            event ? event.target.value = '' : null;
+        });
+    }
 
     // 문서 업로드
     document.getElementById('documentUpload').addEventListener('change', function (event) {

@@ -1,5 +1,6 @@
 package org.vision.bridge.service.translation;
 
+import org.springframework.stereotype.Service;
 import org.vision.bridge.service.utils.EnglishUtils;
 import org.vision.bridge.service.utils.JamoUtils;
 
@@ -7,15 +8,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Service
 public class Translator2Braille {
 
-    private static final int KOREAN = 1;
-    private static final int ENGLISH = 2;
-    private static final int NUMBER = 3;
-    private static final int SPECIAL_CHAR = 4;
+    private final int KOREAN = 1;
+    private final int ENGLISH = 2;
+    private final int NUMBER = 3;
+    private final int SPECIAL_CHAR = 4;
 
-    private static final Map<String, String> koreanMap = new HashMap<>();
-    static {
+    private final Map<String, String> koreanMap = new HashMap<>();
+    {
         koreanMap.put("ㄱ", "⠈"); // 제 1절 1항
         koreanMap.put("ㄴ", "⠉");
         koreanMap.put("ㄷ", "⠊");
@@ -85,7 +87,7 @@ public class Translator2Braille {
         koreanMap.put("ㅢ", "⠺");
     }
 
-    public static int getCharType(char c) {
+    public int getCharType(char c) {
         int type;
         if (isKorean(c)) {
             type = KOREAN;
@@ -99,11 +101,11 @@ public class Translator2Braille {
         return type;
     }
 
-    public static boolean isKorean(char ch) {
+    public boolean isKorean(char ch) {
         return (ch >= '가' && ch <= '힣') || (ch >= 'ㄱ' && ch <= 'ㅎ') || (ch >= 'ㅏ' && ch <= 'ㅣ');
     }
 
-    public static String translate(String text) {
+    public String translate(String text) {
         StringBuilder braille = new StringBuilder();
         String[] words = text.split(" ");
         int wordType = -1;
@@ -197,7 +199,7 @@ public class Translator2Braille {
         return braille.toString();
     }
 
-    private static String _translate(StringBuilder word, int type) {
+    private String _translate(StringBuilder word, int type) {
         String braille;
         if (type == KOREAN) {
             braille = koreanTranslate(word.toString());
@@ -211,9 +213,9 @@ public class Translator2Braille {
         return braille;
     }
 
-    private static final Map<String, String> abbMap = new HashMap<>(); // 제 6절 약자/약어 맵
+    private final Map<String, String> abbMap = new HashMap<>(); // 제 6절 약자/약어 맵
 
-    static {
+    {
         abbMap.put("가", "⠫"); // 제 6절 13항
         abbMap.put("까", "⠠⠫"); // 제 6절 16항
         abbMap.put("나", "⠉");
@@ -299,9 +301,9 @@ public class Translator2Braille {
     }
 
 
-    private static final Map<String, String> abbWordMap = new HashMap<>(); // 제 6절 약자/약어 맵
+    private final Map<String, String> abbWordMap = new HashMap<>(); // 제 6절 약자/약어 맵
 
-    static {
+    {
         abbWordMap.put("그래서", "⠁⠎"); // 제 7절 18항
         abbWordMap.put("그러나", "⠁⠉");
         abbWordMap.put("그러면", "⠁⠒");
@@ -311,11 +313,11 @@ public class Translator2Braille {
         abbWordMap.put("그리하여", "⠁⠱");
     }
 
-    private static boolean isWordChar(char ch) {
+    private boolean isWordChar(char ch) {
         return ch >= '가' && ch <= '힣';
     }
 
-    private static boolean isWord(char[] chars) {
+    private boolean isWord(char[] chars) {
         for (char c : chars) {
             if (isWordChar(c))
                 return true;
@@ -323,8 +325,8 @@ public class Translator2Braille {
         return false;
     }
 
-    private static final String[] abbWords = {"그래서", "그러나", "그러면", "그러므로", "그런데", "그리고", "그리하여"};
-    private static String koreanTranslate(String word) {
+    private final String[] abbWords = {"그래서", "그러나", "그러면", "그러므로", "그런데", "그리고", "그리하여"};
+    private String koreanTranslate(String word) {
         StringBuilder stringBuilder = new StringBuilder();
         int i = 0;
         for (String aw : abbWords) {
@@ -411,13 +413,13 @@ public class Translator2Braille {
         return stringBuilder.toString();
     }
 
-    private static String abbCheck(String cho, String jung, String jong) {
+    private String abbCheck(String cho, String jung, String jong) {
         return abbMap.get(JamoUtils.combine(cho, jung, jong));
     }
 
-    private static final Map<Character, String> choToJongMap = new HashMap<>();
+    private final Map<Character, String> choToJongMap = new HashMap<>();
 
-    static {
+    {
         choToJongMap.put('ㄱ', "⠁"); // 제 4절 8항
         choToJongMap.put('ㄲ', "⠁⠁");
         choToJongMap.put('ㄴ', "⠒");
@@ -439,7 +441,7 @@ public class Translator2Braille {
         choToJongMap.put('ㅎ', "⠴");
     }
 
-    private static String getUmjeolOnly(char ch) { // 제 4절 자/모음 단독
+    private String getUmjeolOnly(char ch) { // 제 4절 자/모음 단독
         if (ch >= 'ㄱ' && ch <= 'ㅎ') {
             return choToJongMap.get(ch);
         } else if (ch >= 'ㅏ' && ch <= 'ㅣ') {
@@ -449,8 +451,8 @@ public class Translator2Braille {
         }
     }
 
-    private static final Map<Character, String> englishMap = new HashMap<>();
-    static {
+    private final Map<Character, String> englishMap = new HashMap<>();
+    {
         englishMap.put('a', "⠁"); // 제 10절 28항
         englishMap.put('b', "⠃");
         englishMap.put('c', "⠉");
@@ -506,7 +508,7 @@ public class Translator2Braille {
     }
 
     // 약자 규정 https://test.kbuwel.or.kr/Braille/Boards/ExamFiles/Details/31?Page=5
-    private static String englishTranslate(String word) {
+    private String englishTranslate(String word) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] charArray = word.toCharArray();
         for (int i = 0; i < charArray.length; i++) {
@@ -524,7 +526,7 @@ public class Translator2Braille {
         return stringBuilder.toString();
     }
 
-    private static int countUpperWord(String[] words, int startIndex) {
+    private int countUpperWord(String[] words, int startIndex) {
         int i = startIndex;
         for (; i < words.length; i++) {
             if (!EnglishUtils.isAllUpperCase(words[i])) {
@@ -534,8 +536,8 @@ public class Translator2Braille {
         return i;
     }
 
-    private static final Map<Character, String> numberMap = new HashMap<>();
-    static {
+    private final Map<Character, String> numberMap = new HashMap<>();
+    {
         numberMap.put('1', "⠁"); // 제 11절 40항
         numberMap.put('2', "⠃");
         numberMap.put('3', "⠉");
@@ -550,7 +552,7 @@ public class Translator2Braille {
         numberMap.put('.', "⠲");
     }
 
-    private static String numberTranslate(String word) {
+    private String numberTranslate(String word) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] charArray = word.toCharArray();
         for (int i = 0; i < charArray.length; i++) {
@@ -559,8 +561,8 @@ public class Translator2Braille {
         return stringBuilder.toString();
     }
 
-    private static final Map<Character, String> specialCharMap = new HashMap<>();
-    static {
+    private final Map<Character, String> specialCharMap = new HashMap<>();
+    {
         specialCharMap.put('+', "⠢"); // 제 44항
         specialCharMap.put('-', "⠔");
         specialCharMap.put('×', "⠡");
@@ -606,7 +608,7 @@ public class Translator2Braille {
         specialCharMap.put('□', "⠸⠶⠇");
     }
 
-    private static String specialCharTranslate(String word) {
+    private String specialCharTranslate(String word) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] charArray = word.toCharArray();
         for (int i = 0; i < charArray.length; i++) {

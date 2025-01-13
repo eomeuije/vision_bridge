@@ -1,5 +1,6 @@
 package org.vision.bridge.service.translation;
 
+import org.springframework.stereotype.Service;
 import org.vision.bridge.service.utils.JamoUtils;
 
 import java.util.ArrayList;
@@ -7,10 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Service
 public class Translator2Text {
 
-    private static final Map<String, String> choMap = new HashMap<>();
-    static {
+    private final Map<String, String> choMap = new HashMap<>();
+    {
         choMap.put("⠈", "ㄱ"); // 제 1절 1항
         choMap.put("⠉", "ㄴ");
         choMap.put("⠊", "ㄷ");
@@ -32,8 +34,8 @@ public class Translator2Text {
         choMap.put("⠠⠨", "ㅉ");
     }
 
-    private static final Map<String, String> jungMap = new HashMap<>();
-    static {
+    private final Map<String, String> jungMap = new HashMap<>();
+    {
         jungMap.put("⠣", "ㅏ"); // 제 3절 6항
         jungMap.put("⠜", "ㅑ");
         jungMap.put("⠎", "ㅓ");
@@ -60,8 +62,8 @@ public class Translator2Text {
     }
 
 
-    private static final Map<String, String> jongMap = new HashMap<>();
-    static {
+    private final Map<String, String> jongMap = new HashMap<>();
+    {
         jongMap.put("⠁", "ᆨ"); // 제 2절 3항
         jongMap.put("⠒", "ᆫ");
         jongMap.put("⠔", "ᆮ");
@@ -91,8 +93,8 @@ public class Translator2Text {
         jongMap.put("⠃⠄", "ᆹ");
     }
 
-    private static final Map<String, String> abbAMap = new HashMap<>();
-    static {
+    private final Map<String, String> abbAMap = new HashMap<>();
+    {
         abbAMap.put("⠫", "가"); // 제 6절 13항
         abbAMap.put("⠠⠫", "까");
         abbAMap.put("⠉", "나");
@@ -111,8 +113,8 @@ public class Translator2Text {
         abbAMap.put("⠚", "하");
     }
 
-    private static final Map<String, String> abbBMap = new HashMap<>();
-    static {
+    private final Map<String, String> abbBMap = new HashMap<>();
+    {
         abbBMap.put("⠹", "억"); // 제 6절 15항
         abbBMap.put("⠹⠁", "얶"); // 제 6절 15항
         abbBMap.put("⠾", "언");
@@ -182,9 +184,9 @@ public class Translator2Text {
         abbBMap.put("⠟⠴", "읺");
     }
 
-    private static final Map<String, String> abbWordMap = new HashMap<>(); // 제 6절 약자/약어 맵
+    private final Map<String, String> abbWordMap = new HashMap<>(); // 제 6절 약자/약어 맵
 
-    static {
+    {
         abbWordMap.put("⠁⠎", "그래서"); // 제 7절 18항
         abbWordMap.put("⠁⠉", "그러나");
         abbWordMap.put("⠁⠒", "그러면");
@@ -194,8 +196,8 @@ public class Translator2Text {
         abbWordMap.put("⠁⠱", "그리하여");
     }
 
-    private static final Map<String, String> choOnlyMap = new HashMap<>(); // 제 6절 약자/약어 맵
-    static {
+    private final Map<String, String> choOnlyMap = new HashMap<>(); // 제 6절 약자/약어 맵
+    {
         choOnlyMap.put("⠿⠁", "ㄱ");
         choOnlyMap.put("⠿⠒", "ㄴ");
         choOnlyMap.put("⠿⠔", "ㄷ");
@@ -251,8 +253,8 @@ public class Translator2Text {
         choOnlyMap.put("⠸⠃⠄", "ㅄ");
     }
 
-    private static final Map<Character, String> numberMap = new HashMap<>();
-    static {
+    private final Map<Character, String> numberMap = new HashMap<>();
+    {
         numberMap.put('⠁', "1"); // 제 11절 40항
         numberMap.put('⠃', "2");
         numberMap.put('⠉', "3");
@@ -268,8 +270,8 @@ public class Translator2Text {
     }
 
 
-    private static final Map<String, String> specialCharMap = new HashMap<>();
-    static {
+    private final Map<String, String> specialCharMap = new HashMap<>();
+    {
         specialCharMap.put("⠢", "+"); // 제 44항
         specialCharMap.put("⠔", "-");
         specialCharMap.put("⠡", "×");
@@ -313,8 +315,8 @@ public class Translator2Text {
     }
 
 
-    private static final List<Map<String, String>> mapList = new ArrayList<>();
-    static {
+    private final List<Map<String, String>> mapList = new ArrayList<>();
+    {
         mapList.add(choMap);
         mapList.add(jungMap);
         mapList.add(abbAMap);
@@ -324,9 +326,9 @@ public class Translator2Text {
         mapList.add(specialCharMap);
     }
 
-    private static final Map<Character, String> englishMap = new HashMap<>();
+    private final Map<Character, String> englishMap = new HashMap<>();
 
-    static {
+    {
         englishMap.put('⠁', "a"); // 제 10절 28항
         englishMap.put('⠃', "b");
         englishMap.put('⠉', "c");
@@ -355,7 +357,7 @@ public class Translator2Text {
         englishMap.put('⠵', "z");
     }
 
-    public static String translate(String braille) {
+    public String translate(String braille) {
         StringBuilder text = new StringBuilder();
         String[] words = braille.split(" ");
         boolean english = false;
@@ -503,14 +505,14 @@ public class Translator2Text {
         return text.toString();
     }
 
-    private static String translateKoreanByIndex(String target, int choIndex, int jungIndex, int jongIndex) {
+    private String translateKoreanByIndex(String target, int choIndex, int jungIndex, int jongIndex) {
         String cho = target.substring(0, choIndex + 1);
         String jung = target.substring(choIndex + 1, jungIndex + 1);
         String jong = target.substring(jungIndex + 1, jongIndex + 1);
         return JamoUtils.combine(choMap.getOrDefault(cho, ""), jungMap.getOrDefault(jung, ""), jongMap.getOrDefault(jong, ""));
     }
 
-    private static int getChoEndIndex(String s) {
+    private int getChoEndIndex(String s) {
         if (s.length() == 0) {
             return -1;
         } else if (choMap.containsKey(s)) {
@@ -520,7 +522,7 @@ public class Translator2Text {
         }
     }
 
-    private static int getJungEndIndex(String s) {
+    private int getJungEndIndex(String s) {
         if (s.length() == 0) {
             return -1;
         } else if (jungMap.containsKey(s)) {
@@ -530,7 +532,7 @@ public class Translator2Text {
         }
     }
 
-    private static int getJongEndIndex(String s) {
+    private int getJongEndIndex(String s) {
         if (s.length() == 0) {
             return -1;
         } else if (jongMap.containsKey(s)) {
@@ -540,7 +542,7 @@ public class Translator2Text {
         }
     }
 
-    private static int getAbbBEndIndex(String s) {
+    private int getAbbBEndIndex(String s) {
         if (s.length() == 0) {
             return -1;
         } else if (abbBMap.containsKey(s)) {
@@ -550,7 +552,7 @@ public class Translator2Text {
         }
     }
 
-    private static Map<String, String> getExistMap(String key) {
+    private Map<String, String> getExistMap(String key) {
         for (Map<String, String> brailleMap : mapList) {
             if (brailleMap.containsKey(key)) {
                 return brailleMap;
