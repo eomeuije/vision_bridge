@@ -18,6 +18,21 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
     implementation 'net.sourceforge.tess4j:tess4j:5.11.0'
+
+    implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.27'
+
+    // https://mvnrepository.com/artifact/kr.dogfoot/hwplib
+    implementation group: 'kr.dogfoot', name: 'hwplib', version: '1.1.8'
+    // https://mvnrepository.com/artifact/kr.dogfoot/hwpxlib
+    implementation group: 'kr.dogfoot', name: 'hwpxlib', version: '1.0.3'
+
+    // https://mvnrepository.com/artifact/org.apache.poi/poi
+    implementation group: 'org.apache.poi', name: 'poi', version: '5.3.0'
+    // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+    implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.3.0'
+
+
+
 }
 
 test {
