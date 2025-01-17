@@ -3,7 +3,9 @@ package org.vision.bridge.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.vision.bridge.service.brf.BRFParser;
@@ -14,15 +16,22 @@ import org.vision.bridge.service.documentParser.PlainTextParser;
 import org.vision.bridge.service.utils.BrailleUtils;
 
 
+@Controller
+@RequestMapping("/document")
 public class DocumentController {
 
-    @Autowired public PDFParser pdfParser;
-    @Autowired public PlainTextParser plainTextParser;
-    @Autowired public HWPParser hwpParser;
-    @Autowired public BRFParser brfParser;
-    @Autowired public MSWordParser msWordParser;
+    @Autowired
+    public PDFParser pdfParser;
+    @Autowired
+    public PlainTextParser plainTextParser;
+    @Autowired
+    public HWPParser hwpParser;
+    @Autowired
+    public BRFParser brfParser;
+    @Autowired
+    public MSWordParser msWordParser;
 
-    @PostMapping("/document/text")
+    @PostMapping("/text")
     public ResponseEntity<String> parseToText(@RequestParam("file") MultipartFile file) {
         try {
             String result = toText(file);
@@ -37,7 +46,7 @@ public class DocumentController {
     }
 
 
-    @PostMapping("/document/braille")
+    @PostMapping("/braille")
     public ResponseEntity<String> parseToBraille(@RequestParam("file") MultipartFile file) {
         try {
             String result = toText(file);
@@ -75,4 +84,9 @@ public class DocumentController {
         }
         return result;
     }
+
+//    @PostMapping("/document/brf-download")
+//    public ResponseEntity<String> parseToBraille(@RequestParam("file") MultipartFile file) {
+//
+//    }
 }
