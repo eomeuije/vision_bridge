@@ -9,6 +9,7 @@
     <link href="/styles.css" rel="stylesheet">
 </head>
 <body>
+
 <!-- 로고, 제목, 사용법 버튼 영역 -->
 <div class="header d-flex align-items-center justify-content-between">
     <!-- 로고 영역 -->
@@ -73,6 +74,18 @@
                 <button id="voiceButton" class="shared-button" aria-label="번역 결과 음성 출력" tabindex="14">
                     <i class="fa-solid fa-play"></i> 번역 결과 음성 출력
                 </button>
+            </div>
+            <!-- 음성 속도 버튼 -->
+            <div class="voice-settings">
+                <label for="voiceRate">
+                    <i class="fa-solid fa-tachometer-alt"></i> 음성 속도:
+                </label>
+                <select id="voiceRate" class="form-select">
+                    <option value="0.5">느림 (0.5x)</option>
+                    <option value="1" selected>보통 (1x)</option>
+                    <option value="1.5">빠름 (1.5x)</option>
+                    <option value="2">매우 빠름 (2x)</option>
+                </select>
             </div>
         </div>
     </div>
@@ -360,14 +373,20 @@
     // 음성 출력 버튼
     document.getElementById('voiceButton').addEventListener('click', function () {
         const text = document.getElementById('outputText').value; // 출력 텍스트 가져오기
+        const rate = parseFloat(document.getElementById('voiceRate').value); // 선택된 음성 속도
+        console.log('선택된 음성 속도:', rate);
+
         if (text) {
             const speech = new SpeechSynthesisUtterance(text);
-            speech.lang = 'ko-KR'; // 한국어로 설정
-            window.speechSynthesis.speak(speech); // 음성 출력
+            speech.lang = 'ko-KR';
+            speech.rate = rate; // 사용자 선택 속도 적용
+            console.log('적용된 음성 속도:', speech.rate);
+            window.speechSynthesis.speak(speech);
         } else {
             alert('번역 결과가 없습니다.');
         }
     });
+
 
 </script>
 </body>
