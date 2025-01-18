@@ -134,6 +134,37 @@
         }
     });
 
+    // 번역 버튼 동작
+    document.getElementById('translateButton').addEventListener('click', function () {
+        const inputValue = document.getElementById('inputText').value;
+
+        if (!inputValue) {
+            alert('입력 텍스트가 비어 있습니다.');
+            return;
+        }
+
+        // API 호출
+        const endpoint = isBrailleToText ? '/translate/toText' : '/translate/toBraille';
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(isBrailleToText ? { brailleText: inputValue } : { sourceText: inputValue }),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`번역 실패: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('outputText').value = data; // 번역 결과 출력
+            })
+            .catch(error => {
+                console.error('번역 중 오류 발생:', error);
+                alert(`번역 중 오류 발생: ${error.message}`);
+            });
+    });
+
     // 이미지 업로드 버튼 상태 업데이트 함수
     function updateImageUploadButton() {
         const imageUploadButton = document.getElementById('imageUploadButton'); // 고유 id로 접근
