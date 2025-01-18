@@ -38,13 +38,13 @@
 
             <div class="file-upload">
                 <!-- 이미지 업로드 버튼 -->
-                <button class="shared-button" aria-label="이미지 파일 업로드" onclick="document.getElementById('imageUpload').click()" tabindex="11">
-                    <i class="fa-regular fa-image"></i> 이미지 업로드
+                <button class="shared-button" id="imageUploadButton" aria-label="이미지 파일 업로드" onclick="document.getElementById('imageUpload').click()" tabindex="11">
+                    <i class="fa-regular fa-image"></i> 점자 이미지 업로드
                 </button>
                 <input type="file" id="imageUpload" accept="image/*" enctype="multipart/form-data" style="display: none;">
                 <!-- 문서 업로드 버튼 -->
-                <button class="shared-button" aria-label="문서 파일 업로드" onclick="document.getElementById('documentUpload').click()" tabindex="12">
-                    <i class="fa-regular fa-folder-open"></i> 문서 업로드
+                <button class="shared-button" id="documentUploadButton" aria-label="문서 파일 업로드" onclick="document.getElementById('documentUpload').click()" tabindex="12">
+                    <i class="fa-regular fa-folder-open"></i> 점자 문서 업로드
                 </button>
                 <input type="file" id="documentUpload" style="display: none;">
             </div>
@@ -92,6 +92,7 @@
 
     // 번역 방향 변경 (클릭 및 엔터 키)
     translateArrow.addEventListener('click', function () {
+        // 상태 토글
         isBrailleToText = !isBrailleToText;
 
         // 입력 영역 탭 활성화 및 색상 변경
@@ -119,6 +120,10 @@
         // 입력 및 출력 값 초기화
         inputText.value = '';
         outputText.value = '';
+
+        // 버튼 업데이트
+        updateImageUploadButton();
+        updateDocumentUploadButton();
     });
 
     // 엔터 키로 번역 방향 변경
@@ -128,6 +133,22 @@
             this.click(); // 클릭 이벤트 트리거
         }
     });
+
+    // 이미지 업로드 버튼 상태 업데이트 함수
+    function updateImageUploadButton() {
+        const imageUploadButton = document.getElementById('imageUploadButton'); // 고유 id로 접근
+        if (imageUploadButton) {
+            imageUploadButton.innerHTML = isBrailleToText
+                ? '<i class="fa-regular fa-image"></i> 점자 이미지 업로드'
+                : '<i class="fa-regular fa-image"></i> 비점자 이미지 업로드';
+            imageUploadButton.setAttribute('aria-label', isBrailleToText
+                ? '점자 이미지 파일 업로드'
+                : '비점자 이미지 파일 업로드');
+            // console.log("버튼 상태 업데이트 완료:", isBrailleToText ? "점자" : "비점자");
+        } else {
+            // console.error("이미지 업로드 버튼을 찾을 수 없습니다.");
+        }
+    }
 
     // 사용법 버튼
     document.getElementById('helpButton').addEventListener('click', function () {
@@ -181,28 +202,43 @@
 
     function imageUploadEvent(file, event) {
         if (!file) {
+            console.error("파일이 선택되지 않았습니다.");
             return;
         }
+
+        // 번역 방향에 따른 서버 엔드포인트 설정
+        const endpoint = isBrailleToText ? '/uploadImage' : '/ocr';
+        console.log(`서버로 요청 보냄: ${endpoint}`); // 엔드포인트 확인
+
         const formData = new FormData();
         formData.append("file", file);
+        console.log("업로드 중인 파일:", file.name); // 파일 이름 출력
 
-        fetch('/ocr', {
+        fetch(endpoint, {
             method: 'POST',
-            body: formData
-        }).then(response => {
-            if (!response.ok) {
-              throw new Error("업로드 실패");
-            }
-            return response.text();
+            body: formData,
         })
-        .then(data => {
-            document.getElementById("inputText").value = data;
-            event ? event.target.value = '' : null;
-        })
-        .catch(error => {
-            alert(error.message);
-            event ? event.target.value = '' : null;
-        });
+            .then(response => {
+                console.log("서버 응답 상태:", response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`업로드 실패: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("서버 응답 데이터:", data); // 서버 응답 확인
+                document.getElementById("inputText").value = data; // 서버 응답 표시
+                if (event) {
+                    event.target.value = ''; // 파일 입력 초기화
+                }
+            })
+            .catch(error => {
+                console.error("업로드 중 오류 발생:", error.message);
+                alert(`업로드 중 오류 발생: ${error.message}`);
+                if (event) {
+                    event.target.value = ''; // 파일 입력 초기화
+                }
+            });
     }
 
     // 문서 업로드
@@ -213,30 +249,64 @@
         }
     });
 
-    document.getElementById('translateButton').addEventListener('click', function () {
-        const sourceText = inputText.value;
+    // 문서 업로드
+    document.getElementById('documentUpload').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) {
+            console.error("파일이 선택되지 않았습니다.");
+            return;
+        }
 
-        fetch('/api/translate', {
+        // 번역 방향에 따른 서버 엔드포인트 설정
+        const endpoint = isBrailleToText ? '/document/braille' : '/document/text';
+        console.log(`서버로 요청 보냄: ${endpoint}`);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sourceText })
+            body: formData,
         })
             .then(response => {
                 if (!response.ok) {
-                    return response.text().then(errorMessage => {
-                        throw new Error(`서버 오류: ${errorMessage}`);
-                    });
+                    throw new Error(`업로드 실패: ${response.statusText}`);
                 }
                 return response.text();
             })
             .then(data => {
-                outputText.value = data;
+                console.log("서버 응답 데이터:", data);
+                alert("문서 업로드 및 처리 완료!");
             })
             .catch(error => {
-                console.error('Error:', error.message);
-                alert('번역 요청 중 문제가 발생했습니다.');
+                console.error("업로드 중 오류 발생:", error.message);
+                alert(`업로드 중 오류 발생: ${error.message}`);
+            })
+            .finally(() => {
+                event.target.value = ''; // 파일 입력 초기화
             });
     });
+
+    function updateDocumentUploadButton() {
+        const documentUploadButton = document.getElementById('documentUploadButton');
+        const documentUploadInput = document.getElementById('documentUpload');
+
+        if (documentUploadButton && documentUploadInput) {
+            if (isBrailleToText) {
+                // 점자 → 비점자
+                documentUploadButton.innerHTML = '<i class="fa-regular fa-folder-open"></i> 점자 문서 업로드';
+                documentUploadButton.setAttribute('aria-label', '점자 문서 파일 업로드');
+                documentUploadInput.setAttribute('accept', '.brf');
+            } else {
+                // 비점자 → 점자
+                documentUploadButton.innerHTML = '<i class="fa-regular fa-folder-open"></i> 비점자 문서 업로드';
+                documentUploadButton.setAttribute('aria-label', '비점자 문서 파일 업로드');
+                documentUploadInput.setAttribute('accept', '.pdf,.hwp,.docx,.txt');
+            }
+        } else {
+            console.error("문서 업로드 버튼 또는 입력 요소를 찾을 수 없습니다.");
+        }
+    }
 
     // BRF 다운로드 버튼
     document.getElementById('downloadButton').addEventListener('click', function () {
