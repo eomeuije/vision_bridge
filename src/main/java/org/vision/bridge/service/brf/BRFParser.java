@@ -1,8 +1,11 @@
 package org.vision.bridge.service.brf;
 
+import org.springframework.stereotype.Service;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Service
 public class BRFParser {
     private static final Map<Character, Character> charToBRFMap = new HashMap<>();
     static {

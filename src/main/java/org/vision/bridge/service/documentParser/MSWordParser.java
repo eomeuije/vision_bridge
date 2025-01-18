@@ -2,9 +2,11 @@ package org.vision.bridge.service.documentParser;
 
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
 
+@Service
 public class MSWordParser {
 
     public String parseDOCX(InputStream inputStream) throws IOException {

@@ -5,11 +5,13 @@ import kr.dogfoot.hwplib.reader.HWPReader;
 import kr.dogfoot.hwplib.tool.textextractor.TextExtractMethod;
 import kr.dogfoot.hwplib.tool.textextractor.TextExtractOption;
 import kr.dogfoot.hwplib.tool.textextractor.TextExtractor;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+@Service
 public class HWPParser {
 
     public String parseHWP(InputStream file) throws Exception {
