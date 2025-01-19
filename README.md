@@ -9,5 +9,5 @@ build.gradle의 dependencies 다운로드 후 src/main 아래의 VisionBridgeApp
   1. VisionBridgeApplication 실행
   2. flask_server의 app.py 실행
   3. 터미널에서 작동
-  ``curl -X POST -F "file=@test.png" http://127.0.0.1:5001/uploadImage``
+  ``curl -X POST -F "file=@test.png" http://127.0.0.1:5001/convertBrailleImg``
   ```
