@@ -16,7 +16,7 @@ braille_map_path = "./braille_map.json"
 with open(braille_map_path, "r") as file:
     braille_map = json.load(file)
 
-@app.route('/uploadImage', methods=['POST'])
+@app.route('/convertBrailleImg', methods=['POST'])
 def process_image():
     if 'file' not in request.files:
         return json.dumps({"error": "파일이 업로드되지 않았습니다."}, ensure_ascii=False), 400

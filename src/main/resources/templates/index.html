@@ -241,49 +241,47 @@
     // 이미지 업로드
     document.getElementById('imageUpload').addEventListener('change', function (event) {
         const file = event.target.files[0];
-        imageUploadEvent(file, event);
-    });
-
-    function imageUploadEvent(file, event) {
         if (!file) {
-            console.error("파일이 선택되지 않았습니다.");
+            alert("이미지를 선택해주세요.");
             return;
         }
 
-        // 번역 방향에 따른 서버 엔드포인트 설정
-        const endpoint = isBrailleToText ? '/uploadImage' : '/ocr';
-        console.log(`서버로 요청 보냄: ${endpoint}`); // 엔드포인트 확인
+        // 번역 방향에 따른 Spring 컨트롤러 경로
+        const endpoint = isBrailleToText
+            ? '/api/brailleImg'  // 점자 이미지를 텍스트로 변환
+            : '/ocr';            // OCR 작업 수행
 
         const formData = new FormData();
         formData.append("file", file);
-        console.log("업로드 중인 파일:", file.name); // 파일 이름 출력
 
         fetch(endpoint, {
             method: 'POST',
             body: formData,
         })
             .then(response => {
-                console.log("서버 응답 상태:", response.status, response.statusText);
                 if (!response.ok) {
-                    throw new Error(`업로드 실패: ${response.statusText}`);
+                    throw new Error(`Spring 서버와의 통신 오류: ${response.statusText}`);
                 }
-                return response.text();
+                return response.json(); // JSON 응답 처리
             })
             .then(data => {
-                console.log("서버 응답 데이터:", data); // 서버 응답 확인
-                document.getElementById("inputText").value = data; // 서버 응답 표시
-                if (event) {
-                    event.target.value = ''; // 파일 입력 초기화
+                // 번역 방향에 따라 처리 결과 출력
+                if (isBrailleToText && data.braille_text) {
+                    document.getElementById('inputText').value = data.braille_text.join('\n'); // 점자 → 텍스트
+                } else if (!isBrailleToText && data.text) {
+                    document.getElementById('inputText').value = data.text; // 텍스트 → 점자
+                } else {
+                    alert("변환 결과를 가져올 수 없습니다.");
                 }
             })
             .catch(error => {
-                console.error("업로드 중 오류 발생:", error.message);
-                alert(`업로드 중 오류 발생: ${error.message}`);
-                if (event) {
-                    event.target.value = ''; // 파일 입력 초기화
-                }
+                console.error("Spring 서버 요청 중 오류 발생:", error);
+                alert(`Spring 서버 요청 중 오류 발생: ${error.message}`);
+            })
+            .finally(() => {
+                event.target.value = ""; // 파일 입력 초기화
             });
-    }
+    });
 
     // 문서 업로드
     document.getElementById('documentUpload').addEventListener('change', function (event) {
