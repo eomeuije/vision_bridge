@@ -3,12 +3,9 @@ import numpy as np
 import torch
 
 
-def convert_to_braille_unicode(str_input: str, path: str = "./braille_map.json") -> str:
-    with open(path, "r") as fl:
-        data = json.load(fl)
-
-    if str_input in data.keys():
-        str_output = data[str_input]
+def convert_to_braille_unicode(str_input: str, json_value) -> str:
+    if str_input in json_value.keys():
+        str_output = json_value[str_input]
     return str_output
 
 

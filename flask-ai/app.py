@@ -3,17 +3,23 @@ import json
 from PIL import Image
 from ultralytics import YOLO
 from convert import convert_to_braille_unicode, parse_xywh_and_class
+from dotenv import load_dotenv
+import os
+
+# 특정 파일 로드
+load_dotenv(os.path.join(os.path.dirname(__file__), "flask.env"))
+load_dotenv("flask.env")
 
 # Flask 앱 초기화
 app = Flask(__name__)
 
 # YOLO 모델 로드
-model_path = "./yolov8m.pt"  # 로컬 YOLO 모델 경로
+model_path = os.getenv("MODEL_PATH", "./yolov8m.pt")  # 로컬 YOLO 모델 경로
 model = YOLO(model_path)
 
 # 점자 매핑 파일 로드
-braille_map_path = "./braille_map.json"
-with open(braille_map_path, "r") as file:
+braille_map_path = os.getenv("BRAILLE_MAP_PATH", "./braille_map.json")
+with open(braille_map_path, "r", encoding='utf8') as file:
     braille_map = json.load(file)
 
 @app.route('/convertBrailleImg', methods=['POST'])
@@ -40,7 +46,7 @@ def process_image():
             for box in line:
                 class_id = int(box[-1])  # 클래스 ID
                 class_label = model.names[class_id]  # YOLO 모델 클래스 이름
-                unicode_char = convert_to_braille_unicode(class_label, braille_map_path)
+                unicode_char = convert_to_braille_unicode(class_label, braille_map)
                 line_text += unicode_char
             braille_text.append(line_text)
 

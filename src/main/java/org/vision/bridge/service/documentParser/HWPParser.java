@@ -16,8 +16,6 @@ public class HWPParser {
 
     public String parseHWP(InputStream file) throws Exception {
         HWPFile hwpFile = HWPReader.fromInputStream(file);
-        StringBuilder extractedText = new StringBuilder();
-
 
         TextExtractOption option = new TextExtractOption();
         option.setMethod(TextExtractMethod.InsertControlTextBetweenParagraphText);

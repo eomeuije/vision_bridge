@@ -2,16 +2,16 @@ package org.vision.bridge.service.flask;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -37,10 +37,10 @@ public class BrailleImage {
 
         try {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new InputStreamResource(file.getInputStream()) {
+            body.add("file", new ByteArrayResource(file.getBytes()) {
                 @Override
                 public String getFilename() {
-                    return file.getOriginalFilename();
+                    return file.getOriginalFilename(); // Flask 서버에서 필요할 경우 파일 이름 전달
                 }
             });
 

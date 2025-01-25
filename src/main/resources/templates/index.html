@@ -216,36 +216,35 @@
         event.preventDefault();  // 기본 동작 방지
         inputTextElement.style.backgroundColor = "";  // 배경색 원래대로
         const file = event.dataTransfer.files[0];  // 드롭된 파일 가져오기
-
+        type = '';
         if (!file.type) {
             const fileExtension = file.name.split('.').pop().toLowerCase();
             if (fileExtension === 'pdf') {
-                file.type = 'application/pdf';  // 수동으로 텍스트 파일 타입 설정
+                type = 'application/pdf';  // 수동으로 텍스트 파일 타입 설정
+            } else if (['hwp'].includes(fileExtension)) {
+                type = 'application/x-hwp';
+            } else if (['docx'].includes(fileExtension)) {
+                type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            } else if (['brf', 'text'].includes(fileExtension)) {
+                type = 'application/octet-stream';
             } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
-                file.type = 'image/' + fileExtension;  // 이미지 파일 타입 설정
+                type = 'image/' + fileExtension;  // 이미지 파일 타입 설정
             }
         }
 
         // 파일이 텍스트 파일인 경우
-        if (file && file.type === 'application/pdf') {
+        if (file && file.type.startsWith('application/') || type.startsWith('application/')) {
             documentUploadEvent(file);
         }
         // 파일이 이미지 파일인 경우
-        else if (file && file.type.startsWith('image/')) {
+        else if (file && file.type.startsWith('image/') || type.startsWith('image/')) {
             imageUploadEvent(file);
         } else {
             alert("지원되지 않는 파일 형식입니다.");
         }
     });
 
-    // 이미지 업로드
-    document.getElementById('imageUpload').addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (!file) {
-            alert("이미지를 선택해주세요.");
-            return;
-        }
-
+    function imageUploadEvent(file, event) {
         // 번역 방향에 따른 Spring 컨트롤러 경로
         const endpoint = isBrailleToText
             ? '/api/brailleImg'  // 점자 이미지를 텍스트로 변환
@@ -279,8 +278,18 @@
                 alert(`Spring 서버 요청 중 오류 발생: ${error.message}`);
             })
             .finally(() => {
-                event.target.value = ""; // 파일 입력 초기화
+                if (event) event.target.value = ""; // 파일 입력 초기화
             });
+    }
+
+    // 이미지 업로드
+    document.getElementById('imageUpload').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) {
+            alert("이미지를 선택해주세요.");
+            return;
+        }
+        imageUploadEvent(file, event);
     });
 
     // 문서 업로드
@@ -291,14 +300,7 @@
         }
     });
 
-    // 문서 업로드
-    document.getElementById('documentUpload').addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (!file) {
-            console.error("파일이 선택되지 않았습니다.");
-            return;
-        }
-
+    function documentUploadEvent(file, event) {
         // 번역 방향에 따른 서버 엔드포인트 설정
         const endpoint = isBrailleToText ? '/document/braille' : '/document/text';
         console.log(`서버로 요청 보냄: ${endpoint}`);
@@ -319,14 +321,25 @@
             .then(data => {
                 console.log("서버 응답 데이터:", data);
                 alert("문서 업로드 및 처리 완료!");
+                document.getElementById('inputText').value = data;
             })
             .catch(error => {
                 console.error("업로드 중 오류 발생:", error.message);
                 alert(`업로드 중 오류 발생: ${error.message}`);
             })
             .finally(() => {
-                event.target.value = ''; // 파일 입력 초기화
+                if (event) event.target.value = ''; // 파일 입력 초기화
             });
+    }
+
+    // 문서 업로드
+    document.getElementById('documentUpload').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) {
+            console.error("파일이 선택되지 않았습니다.");
+            return;
+        }
+        documentUploadEvent(file, event);
     });
 
     function updateDocumentUploadButton() {

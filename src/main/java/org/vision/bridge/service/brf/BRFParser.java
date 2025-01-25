@@ -163,7 +163,12 @@ public class BRFParser {
     public String translateBRF2Braille(String brf) {
         StringBuilder braille = new StringBuilder();
         for (char c : brf.toCharArray()) {
-            braille.append(getBraille(c));
+            try {
+                char braille1 = getBraille(c);
+                braille.append(braille1);
+            } catch (NullPointerException e) {
+                braille.append(c);
+            }
         }
         return braille.toString();
     }
@@ -171,7 +176,12 @@ public class BRFParser {
     public String translateBraille2BRF(String braille) {
         StringBuilder brf = new StringBuilder();
         for (char c : braille.toCharArray()) {
-            brf.append(getBRF(c));
+            try {
+                char brf1 = getBRF(c);
+                brf.append(brf1);
+            } catch (NullPointerException e) {
+                brf.append(c);
+            }
         }
         return brf.toString();
     }
