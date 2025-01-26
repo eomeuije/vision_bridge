@@ -172,4 +172,12 @@ class Translator2TextTest {
         Assertions.assertEquals(t.translate(p.translateBRF2Braille("@{`e1!`i{9cz`,g$3`_xl\"<3`e1o``ex@mes7,$.o`;oeo1s/i4".replaceAll("`", " "))).trim()
                 , "그 말을 듣는 순간 ×란 말이  목구멍까지 치밀었다.");
     }
+    @Test
+    void translateS1() {
+        Translator2Text t = new Translator2Text();
+        BRFParser p = new BRFParser();
+        System.out.println(t.translate(
+                "⠠⠊⠐⠥"
+                ));
+    }
 }

@@ -24,7 +24,13 @@ public class TranslationController {
         if (sourceText == null || sourceText.trim().isEmpty()) {
             return "입력 텍스트가 비어 있습니다.";
         }
-        return translator2Braille.translate(sourceText);
+        String[] split = sourceText.split("\n");
+        StringBuilder result = new StringBuilder();
+        for (String s : split) {
+            if (s.isEmpty()) continue;
+            result.append(translator2Braille.translate(s)).append("\n");
+        }
+        return result.toString();
     }
 
     // 점자 → 텍스트 변환
@@ -34,6 +40,12 @@ public class TranslationController {
         if (brailleText == null || brailleText.trim().isEmpty()) {
             return "입력 점자 텍스트가 비어 있습니다.";
         }
-        return translator2Text.translate(brailleText);
+        String[] split = brailleText.split("\n");
+        StringBuilder result = new StringBuilder();
+        for (String s : split) {
+            if (s.isEmpty()) continue;
+            result.append(translator2Text.translate(s)).append("\n");
+        }
+        return result.toString();
     }
 }

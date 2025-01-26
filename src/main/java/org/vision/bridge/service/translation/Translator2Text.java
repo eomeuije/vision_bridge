@@ -3,10 +3,7 @@ package org.vision.bridge.service.translation;
 import org.springframework.stereotype.Service;
 import org.vision.bridge.service.utils.JamoUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class Translator2Text {
@@ -370,6 +367,10 @@ public class Translator2Text {
             for (int j = 0; j < word.length(); j++) {
                 if (word.charAt(j) == '⠼') {
                     number = true;
+                    english = false;
+                    caps = false;
+                    caps1word = false;
+                    caps2word = false;
                     continue;
                 }
                 if (english) {
@@ -391,11 +392,11 @@ public class Translator2Text {
                         continue;
                     } else if (word.charAt(j) == '⠠' && word.length() - j >= 2) {
                         j++;
-                        String upperCase = englishMap.get(word.charAt(j)).toUpperCase();
-                        text.append(upperCase);
+                        String upperCase = englishMap.getOrDefault(word.charAt(j), "").toUpperCase();
+                        text.append(Objects.toString(upperCase, ""));
                         continue;
                     } else {
-                        String en = englishMap.get(word.charAt(j));
+                        String en = englishMap.getOrDefault(word.charAt(j), "");
                         if (caps) {
                             en = en.toUpperCase();
                         } else if (caps2word) {
@@ -409,14 +410,14 @@ public class Translator2Text {
                                 caps1word = false;
                             }
                         }
-                        text.append(en);
+                        text.append(Objects.toString(en, ""));
                         continue;
                     }
                 }
                 if (number) {
                     String num = numberMap.get(word.charAt(j));
                     if (num != null) {
-                        text.append(num);
+                        text.append(Objects.toString(num, ""));
                         continue;
                     }
                     else { number = false;}
@@ -430,7 +431,7 @@ public class Translator2Text {
                 String temp = "";
                 if (existMap == abbWordMap) {
                     String abb = abbWordMap.get(word.substring(j, j + end + 1));
-                    text.append(abb);
+                    text.append(Objects.toString(abb, ""));
                     j += end;
                 }
                 if (existMap == choMap) {
@@ -455,8 +456,12 @@ public class Translator2Text {
                             int abbEndIndex = end + 1 + getAbbBEndIndex(word.substring(j + end + 1));
                             if (abbEndIndex > 0) { // abbB 약자
                                 String abb = abbBMap.get(word.substring(j + end + 1, j + abbEndIndex + 1));
-                                List<String> strings = JamoUtils.splitOne(abb);
-                                korean = JamoUtils.combine(choMap.getOrDefault(word.substring(j, j + end + 1), ""), strings.get(1), strings.get(2));
+                                if (abb != null) {
+                                    List<String> strings = JamoUtils.splitOne(abb);
+                                    korean = JamoUtils.combine(choMap.getOrDefault(word.substring(j, j + end + 1), ""), strings.get(1), strings.get(2));
+                                } else {
+                                    korean = abbAMap.getOrDefault(word.substring(j, end + 1), "");
+                                }
                                 j += abbEndIndex;
                             } else { // abbA 약자
                                 korean = abbAMap.getOrDefault(word.substring(j, j + end + 1), "");
@@ -493,12 +498,13 @@ public class Translator2Text {
                 }
                 if (temp != null) {
                     temp = temp.replaceAll("닾", "다.");
+                    temp = temp.replaceAll("갚", "가.");
                 }
                 if (word.charAt(j) == '⠴' && existMap == null) {
                     english = true;
                     continue;
                 }
-                text.append(temp);
+                text.append(Objects.toString(temp, ""));
             }
             text.append(" ");
         }

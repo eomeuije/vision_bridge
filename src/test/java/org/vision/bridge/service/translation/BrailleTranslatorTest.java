@@ -121,5 +121,34 @@ class BrailleTranslatorTest {
         System.out.println(translate);
         Assertions.assertEquals(x, "s\"qoc1o`,r\"u`.n.}iys/!`i7,oncz s\"qoi!n@n`@}s\"!`,,{\"<@u`j<:/i482%3,?.m7`.).ob8'#aihh,0\"`#gj,.x ;<5.u;0".replaceAll("`", " "));
 
+
+        translate = t.translate("어린이날이 새로 제정되었을 당시에는 어린이들에게 경어를 쓰라고 하였다.[윤석중 전집(1988), 70쪽 참조]");
+        x = brfParser.translateBraille2BRF(translate);
+    }
+
+
+
+    @Test
+    void translateH() {
+        Translator2Braille t = new Translator2Braille();
+        String translate = t.translate("젊은이는 나라의 기둥입니다. ");
+        BRFParser brfParser = new BRFParser();
+        String x = brfParser.translateBraille2BRF(translate);
+
+        String s = "3X4㎝학교명대학(교) 학과 학년/과정주 소e-mail전화번호휴대전화\n";
+        String[] split = s.split("\n");
+        for (String s1 : split) {
+            System.out.println(t.translate(s1));
+        }
+    }
+    @Test
+    void translateH2() {
+        Translator2Braille t = new Translator2Braille();
+        String translate = t.translate("3X4 학교명대학(교)");
+//        String translate = t.translate("3X4");
+        BRFParser brfParser = new BRFParser();
+        String x = brfParser.translateBraille2BRF(translate);
+
+        System.out.println(translate);
     }
 }

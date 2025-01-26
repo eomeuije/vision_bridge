@@ -7,6 +7,7 @@ import org.vision.bridge.service.utils.JamoUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class Translator2Braille {
@@ -122,7 +123,7 @@ public class Translator2Braille {
                     type = NUMBER;
                 }
                 if (wordType != -1 && type != wordType) {
-                    braille.append(_translate(word, wordType));
+                    braille.append(Objects.toString(_translate(word, wordType), ""));
                     if (type == NUMBER) { // 제 11절 40항
                         braille.append("⠼");
                     }
@@ -186,7 +187,7 @@ public class Translator2Braille {
                 }
                 wordType = type;
             }
-            braille.append(_translate(word, wordType));
+            braille.append(Objects.toString(_translate(word, wordType), ""));
             if (i + 1 != words.length)
                 braille.append(" ");
         }
@@ -526,14 +527,17 @@ public class Translator2Braille {
         return stringBuilder.toString();
     }
 
+    // 대문자 개수 세기
     private int countUpperWord(String[] words, int startIndex) {
-        int i = startIndex;
-        for (; i < words.length; i++) {
+        int count = 0;
+        for (int i = startIndex; i < words.length; i++) {
             if (!EnglishUtils.isAllUpperCase(words[i])) {
-                return i;
+                return count;
+            } else {
+                count++;
             }
         }
-        return i;
+        return count;
     }
 
     private final Map<Character, String> numberMap = new HashMap<>();
