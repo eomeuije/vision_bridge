@@ -99,12 +99,31 @@
 
     const brailleTab = document.getElementById('brailleTab');
     const textTab = document.getElementById('textTab');
+
+    const brailleTabOutput = document.getElementById('brailleToText');
+    const textTabOutput = document.getElementById('textToBraille');
+
     const inputText = document.getElementById('inputText');
     const outputText = document.getElementById('outputText');
     const translateArrow = document.getElementById('translateArrow');
 
+    const brfDownloadButton = document.getElementById('downloadButton');
+    updateBRFButton();
+
     // 번역 방향 변경 (클릭 및 엔터 키)
     translateArrow.addEventListener('click', function () {
+        changeDirection();
+    });
+
+    // 엔터 키로 번역 방향 변경
+    translateArrow.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // 기본 동작 방지
+            this.click(); // 클릭 이벤트 트리거
+        }
+    });
+
+    function changeDirection() {
         // 상태 토글
         isBrailleToText = !isBrailleToText;
 
@@ -131,19 +150,39 @@
             : "번역 결과가 점자로 표시됩니다.";
 
         // 입력 및 출력 값 초기화
-        inputText.value = '';
+        // 출력이 존재할 경우 입력으로 이동
+        if (outputText.value) {
+            inputText.value = outputText.value;
+        } else {
+            inputText.value = '';
+        }
         outputText.value = '';
 
         // 버튼 업데이트
         updateImageUploadButton();
         updateDocumentUploadButton();
-    });
+        updateBRFButton();
+    }
 
-    // 엔터 키로 번역 방향 변경
-    translateArrow.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault(); // 기본 동작 방지
-            this.click(); // 클릭 이벤트 트리거
+    // 번역 방향 변경 (클릭 및 엔터 키)
+    brailleTab.addEventListener('click', function () {
+        if (!isBrailleToText) {
+            changeDirection();
+        }
+    });
+    textTab.addEventListener('click', function () {
+        if (isBrailleToText) {
+            changeDirection();
+        }
+    });
+    textTabOutput.addEventListener('click', function () {
+        if (!isBrailleToText) {
+            changeDirection();
+        }
+    });
+    brailleTabOutput.addEventListener('click', function () {
+        if (isBrailleToText) {
+            changeDirection();
         }
     });
 
@@ -191,6 +230,15 @@
             // console.log("버튼 상태 업데이트 완료:", isBrailleToText ? "점자" : "비점자");
         } else {
             // console.error("이미지 업로드 버튼을 찾을 수 없습니다.");
+        }
+    }
+
+    function updateBRFButton() {
+        // 숨길때 위치는 유지 시켰음.
+        if (isBrailleToText) {
+            brfDownloadButton.style.visibility = 'hidden';
+        } else {
+            brfDownloadButton.style.visibility = 'visible';
         }
     }
 
@@ -364,7 +412,7 @@
     }
 
     // BRF 다운로드 버튼
-    document.getElementById('downloadButton').addEventListener('click', function () {
+    brfDownloadButton.addEventListener('click', function () {
         const content = outputText.value;
         if (!content) {
             alert('다운로드할 내용이 없습니다.');
