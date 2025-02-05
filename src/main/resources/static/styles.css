@@ -201,16 +201,14 @@ textarea {
 /* 가상 키보드 팝업 */
 .keyboard-popup {
     display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    position: absolute;
+    left:531px;
     width: 350px;
     background: white;
     border: 1px solid #ccc;
     padding: 20px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
+    z-index: 100;
     text-align: center;
     border-radius: 10px;
 }
