@@ -202,7 +202,7 @@ textarea {
 .keyboard-popup {
     display: none;
     position: absolute;
-    left:531px;
+    left: 27.65%;
     width: 350px;
     background: white;
     border: 1px solid #ccc;
