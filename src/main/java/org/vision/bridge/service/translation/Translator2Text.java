@@ -448,9 +448,11 @@ public class Translator2Text {
                     if (JamoUtils.isOnlyJamo(korean)) {
                         if (jongEndIndex - end >= 1) { // 약자 + 종성인 경우
                             String abb = abbAMap.getOrDefault(word.substring(j, j + end + 1), "");
-                            List<String> strings = JamoUtils.splitOne(abb);
-                            String s = word.substring(j + jongEndIndex, j + jongEndIndex + 1);
-                            korean = JamoUtils.combine(strings.get(0), strings.get(1), jongMap.getOrDefault(s, ""));
+                            if (!abb.isEmpty()) {
+                                List<String> strings = JamoUtils.splitOne(abb);
+                                String s = word.substring(j + jongEndIndex, j + jongEndIndex + 1);
+                                korean = JamoUtils.combine(strings.get(0), strings.get(1), jongMap.getOrDefault(s, ""));
+                            }
                             j += jongEndIndex;
                         } else if (jungEndIndex - end < 1) {
                             int abbEndIndex = end + 1 + getAbbBEndIndex(word.substring(j + end + 1));
@@ -460,7 +462,7 @@ public class Translator2Text {
                                     List<String> strings = JamoUtils.splitOne(abb);
                                     korean = JamoUtils.combine(choMap.getOrDefault(word.substring(j, j + end + 1), ""), strings.get(1), strings.get(2));
                                 } else {
-                                    korean = abbAMap.getOrDefault(word.substring(j, end + 1), "");
+                                    korean = abbAMap.getOrDefault(word.substring(j, j + end + 1), "");
                                 }
                                 j += abbEndIndex;
                             } else { // abbA 약자
