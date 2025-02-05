@@ -35,6 +35,10 @@
                 <span class="lang-toggle active" id="brailleTab" role="tab" aria-selected="true" aria-controls="inputText" tabindex="3">점자</span>
                 <span class="lang-toggle" id="textTab" role="tab" aria-selected="false" aria-controls="inputText" tabindex="4">비점자</span>
             </h4>
+            <!-- 가상 키보드 버튼 -->
+            <button id="openKeyboard" class="btn btn-primary virtual-keyboard-btn">가상 키보드</button>
+
+            <!-- 입력 필드 -->
             <textarea id="inputText" class="form-control" rows="7" placeholder="점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요." aria-label="번역 입력창" tabindex="5"></textarea>
 
             <div class="file-upload">
@@ -86,6 +90,25 @@
                     <option value="1.5">빠름 (1.5x)</option>
                     <option value="2">매우 빠름 (2x)</option>
                 </select>
+            </div>
+        </div>
+    </div>
+    <!-- 가상 키보드 팝업 -->
+    <div id="brailleKeyboardPopup" class="keyboard-popup">
+        <div class="popup-content">
+            <h4>가상 점자 키보드</h4>
+            <div class="grid-container">
+                <div class="hole" id="hole1"></div>
+                <div class="hole" id="hole2"></div>
+                <div class="hole" id="hole3"></div>
+                <div class="hole" id="hole4"></div>
+                <div class="hole" id="hole5"></div>
+                <div class="hole" id="hole6"></div>
+            </div>
+            <div class="keyboard-buttons">
+                <button class="btn btn-danger" onclick="resetBraille()">키보드 초기화</button>
+                <button class="btn btn-success" onclick="generateBraille()">키보드 입력</button>
+                <button class="btn btn-secondary" onclick="closeKeyboard()">키보드 닫기</button>
             </div>
         </div>
     </div>
@@ -446,6 +469,143 @@
         }
     });
 
+    // 점자 가상 키보드
+    let brailleMap = { //flask-ai/braille_map.json 연계해서 사용예정
+        "000000": " ",
+        "000001": "⠠",
+        "000010": "⠐",
+        "000011": "⠰",
+        "000100": "⠈",
+        "000101": "⠨",
+        "000110": "⠘",
+        "000111": "⠸",
+        "001000": "⠄",
+        "001001": "⠤",
+        "001010": "⠔",
+        "001011": "⠴",
+        "001100": "⠌",
+        "001101": "⠬",
+        "001110": "⠜",
+        "001111": "⠼",
+        "010000": "⠂",
+        "010001": "⠢",
+        "010010": "⠒",
+        "010011": "⠲",
+        "010100": "⠊",
+        "010101": "⠪",
+        "010110": "⠚",
+        "010111": "⠺",
+        "011000": "⠆",
+        "011001": "⠦",
+        "011010": "⠖",
+        "011011": "⠶",
+        "011100": "⠎",
+        "011101": "⠮",
+        "011110": "⠞",
+        "011111": "⠾",
+        "100000": "⠁",
+        "100001": "⠡",
+        "100010": "⠑",
+        "100011": "⠱",
+        "100100": "⠉",
+        "100101": "⠩",
+        "100110": "⠙",
+        "100111": "⠹",
+        "101000": "⠅",
+        "101001": "⠥",
+        "101010": "⠕",
+        "101011": "⠵",
+        "101100": "⠍",
+        "101101": "⠭",
+        "101110": "⠝",
+        "101111": "⠽",
+        "110000": "⠃",
+        "110001": "⠣",
+        "110010": "⠓",
+        "110011": "⠳",
+        "110100": "⠋",
+        "110101": "⠫",
+        "110110": "⠛",
+        "110111": "⠻",
+        "111000": "⠇",
+        "111001": "⠧",
+        "111010": "⠗",
+        "111011": "⠷",
+        "111100": "⠏",
+        "111101": "⠯",
+        "111110": "⠟",
+        "111111": "⠿"
+    };
+
+    // 가상 키보드 버튼 클릭 시 팝업 열기
+    document.getElementById('openKeyboard').addEventListener('click', function () {
+        document.getElementById('brailleKeyboardPopup').style.display = 'block';
+    });
+
+    // 닫기 버튼 클릭 시 팝업 닫기
+    function closeKeyboard() {
+        document.getElementById('brailleKeyboardPopup').style.display = 'none';
+    }
+
+    // 점자 키보드 클릭 이벤트 추가
+    document.querySelectorAll('.hole').forEach(hole => {
+        hole.addEventListener('click', () => {
+            hole.classList.toggle('active'); // 클릭 시 색상 변경
+        });
+    });
+
+    // 점자 변환 및 입력 필드(`#inputText`]에 추가
+    function generateBraille() {
+        let bt1 = '', bt2 = '';
+
+        // 각 구멍의 상태에 따라 점자 형식을 생성
+        let holes = document.querySelectorAll('.hole');
+        for (let i = 0; i < holes.length; i++) {
+            let temp;
+            if (holes[i].classList.contains('active')) {
+                temp = '1'; // 검정색일 경우 점자로 '1' 입력
+            } else {
+                temp = '0'; // 흰색일 경우 점자로 '0' 입력
+            }
+
+            // 3개씩 묶어서 한 줄로 만들어줌 (2x3 크기)
+            if ((i + 1) % 2 === 1) {
+                bt1 += temp;
+            } else {
+                bt2 += temp;
+            }
+        }
+
+        let brailleCode = (bt1 + bt2).trim();
+        let brailleChar = brailleMap[brailleCode] || " ";
+
+        // 변환된 점자를 입력 필드(`#inputText`]에 삽입
+        insertBraille(brailleChar);
+    }
+
+    // 입력 필드(`#inputText`]의 커서 위치에 점자 삽입
+    function insertBraille(braille) {
+        let textarea = document.getElementById('inputText');
+        let cursorPos = textarea.selectionStart; // 현재 커서 위치 가져오기
+
+        let text = textarea.value;
+
+        // 입력값을 유지하면서 커서 위치에 점자 삽입
+        let newText = text.slice(0, cursorPos) + braille + text.slice(cursorPos);
+        textarea.value = newText;
+
+        // 커서 위치를 삽입한 점자 다음으로 이동
+        let newCursorPos = cursorPos + braille.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.focus(); // 입력 필드에 포커스 유지
+    }
+
+    // "키보드 초기화" 버튼 클릭 시 선택된 점자 초기화
+    function resetBraille() {
+        document.querySelectorAll('.hole').forEach(hole => {
+            hole.classList.remove('active');
+        });
+    }
 
 </script>
 </body>
