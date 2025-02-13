@@ -106,7 +106,20 @@ public class Translator2Braille {
         return (ch >= '가' && ch <= '힣') || (ch >= 'ㄱ' && ch <= 'ㅎ') || (ch >= 'ㅏ' && ch <= 'ㅣ');
     }
 
+    private String patterns(String text) {
+        String pattern = "((?=.*[가-힣])[가-힣0-9]+)([+\\-*=<>×÷]+)((?=.*[가-힣])[가-힣0-9]+)";
+        while (text.matches(".*" + pattern + ".*")) {
+            text = text.replaceAll(pattern, "$1 $2 $3");
+        }
+
+
+        text = text.replaceAll("(\\S)\\*(\\S)", "$1 * $2");
+
+        return text;
+    }
+
     public String translate(String text) {
+        text = patterns(text);
         StringBuilder braille = new StringBuilder();
         String[] words = text.split(" ");
         int wordType = -1;
@@ -149,7 +162,11 @@ public class Translator2Braille {
                             && (chars[j] != '.' && chars[j] != '?' && chars[j] != '!' && chars[j] != '…')  // 제 10절 33항 다만
                             && (type != NUMBER) // 제 35항
                         )
-                            braille.append("⠲");
+                            if (braille.length() > 0 && braille.charAt(braille.length() - 1) == ' ') {
+                                braille.insert(braille.length() - 1, "⠲"); // 마지막 공백 앞에 삽입
+                            } else {
+                                braille.append("⠲");
+                            }
                     }
                     if (wordType == NUMBER && type == KOREAN) { // 제 44항 다만
                         String target = String.valueOf(chars[j]);
@@ -195,7 +212,11 @@ public class Translator2Braille {
             if (isUpperOverThree) {
                 braille.append("⠠⠄");
             }
-            braille.append("⠲");
+            if (braille.length() > 0 && braille.charAt(braille.length() - 1) == ' ') {
+                braille.insert(braille.length() - 1, "⠲"); // 마지막 공백 앞에 삽입
+            } else {
+                braille.append("⠲");
+            }
         }
         return braille.toString();
     }
@@ -241,6 +262,7 @@ public class Translator2Braille {
         abbMap.put("열", "⠳");
         abbMap.put("영", "⠻");
         abbMap.put("옥", "⠭");
+        abbMap.put("옦", "⠭⠁");
         abbMap.put("온", "⠷");
         abbMap.put("옹", "⠿");
         abbMap.put("운", "⠛");
@@ -256,7 +278,7 @@ public class Translator2Braille {
         abbMap.put("썽", "⠠⠠⠻");
         abbMap.put("정", "⠨⠻");
         abbMap.put("쩡", "⠠⠨⠻");
-        abbMap.put("청", "⠆⠻");
+        abbMap.put("청", "⠰⠻");
         abbMap.put("얷", "⠹⠄"); // 제 6절 15항 붙임
         abbMap.put("얹", "⠾⠅");
         abbMap.put("얺", "⠾⠴");
@@ -371,6 +393,10 @@ public class Translator2Braille {
                     j = 0;
                 }
             } else {
+                if (target.equals("팠")) {
+                    stringBuilder.append("⠙⠣⠌");
+                    continue;
+                }
                 if (!splitOne.get(2).equals("")) { // 제 6절 15항
                     if (target.equals("것") || target.equals("껏") || target.equals("성") || target.equals("썽") || target.equals("정") || target.equals("쩡") || target.equals("청")) {
                         abb = abbMap.get(target);
@@ -596,6 +622,7 @@ public class Translator2Braille {
         specialCharMap.put('[', "⠦⠆");
         specialCharMap.put(']', "⠰⠴");
         specialCharMap.put('『', "⠰⠦");
+        specialCharMap.put('~', "⠈⠔");
         specialCharMap.put('』', "⠴⠆");
         specialCharMap.put('「', "⠐⠦");
         specialCharMap.put('」', "⠴⠂");
@@ -608,6 +635,7 @@ public class Translator2Braille {
         specialCharMap.put('̊', "⠠⠤");
         specialCharMap.put('_', "⠤⠄");
         specialCharMap.put('○', "⠸⠴⠇");
+        specialCharMap.put('*', "⠐⠔");
         specialCharMap.put('△', "⠸⠬⠇");
         specialCharMap.put('□', "⠸⠶⠇");
     }

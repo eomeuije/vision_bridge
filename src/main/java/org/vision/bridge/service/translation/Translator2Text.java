@@ -17,7 +17,7 @@ public class Translator2Text {
         choMap.put("⠑", "ㅁ");
         choMap.put("⠘", "ㅂ");
         choMap.put("⠠", "ㅅ");
-        choMap.put("⠛", "ㅇ");
+//        choMap.put("⠛", "ㅇ");
         choMap.put("⠨", "ㅈ");
         choMap.put("⠰", "ㅊ");
         choMap.put("⠋", "ㅋ");
@@ -219,7 +219,7 @@ public class Translator2Text {
         choOnlyMap.put("⠿⠂⠃", "ㄼ");
         choOnlyMap.put("⠿⠂⠄", "ㄽ");
         choOnlyMap.put("⠿⠂⠦", "ㄾ");
-        choOnlyMap.put("⠿⠂⠲", "ㄿ");
+//        choOnlyMap.put("⠿⠂⠲", "ㄿ");// '.'과 혼동이 생김
         choOnlyMap.put("⠿⠂⠴", "ㅀ");
         choOnlyMap.put("⠿⠃⠄", "ㅄ");
         choOnlyMap.put("⠸⠁", "ㄱ");
@@ -271,7 +271,7 @@ public class Translator2Text {
     {
         specialCharMap.put("⠢", "+"); // 제 44항
         specialCharMap.put("⠔", "-");
-        specialCharMap.put("⠡", "×");
+        specialCharMap.put("⠐⠔", "*");
         specialCharMap.put("⠌⠌", "÷");
         specialCharMap.put("⠒⠒", "=");
         specialCharMap.put("⠢⠢", ">");
@@ -302,9 +302,10 @@ public class Translator2Text {
         specialCharMap.put("⠐⠶", "〈");
         specialCharMap.put("⠶⠂", "〉");
         specialCharMap.put("⠤⠤", "―");
-        specialCharMap.put("⠈⠔", "∼");
+        specialCharMap.put("⠈⠔", "~");
         specialCharMap.put("⠠⠤", "̊");
         specialCharMap.put("⠤⠄", "_");
+        specialCharMap.put("⠤", "-");
         specialCharMap.put("⠸⠴⠇", "○");
         specialCharMap.put("⠸⠬⠇", "△");
         specialCharMap.put("⠸⠭⠇", "×");
@@ -450,7 +451,7 @@ public class Translator2Text {
                             String abb = abbAMap.getOrDefault(word.substring(j, j + end + 1), "");
                             if (!abb.isEmpty()) {
                                 List<String> strings = JamoUtils.splitOne(abb);
-                                String s = word.substring(j + jongEndIndex, j + jongEndIndex + 1);
+                                String s = word.substring(j + end + 1, j + jongEndIndex + 1);
                                 korean = JamoUtils.combine(strings.get(0), strings.get(1), jongMap.getOrDefault(s, ""));
                             }
                             j += jongEndIndex;
@@ -468,7 +469,11 @@ public class Translator2Text {
                             } else { // abbA 약자
                                 korean = abbAMap.getOrDefault(word.substring(j, j + end + 1), "");
                                 if (korean.isEmpty()) {
-                                    korean = ",";
+                                    if (word.substring(j, j + end + 1).equals("⠛")) {
+                                        korean = "운";
+                                    } else {
+                                        korean = ",";
+                                    }
                                 }
                                 j += jongEndIndex;
                             }
@@ -477,6 +482,11 @@ public class Translator2Text {
                         j += jongEndIndex;
                     }
                     temp = korean;
+                    temp = temp.replaceAll("셩", "성");
+                    temp = temp.replaceAll("쎵", "썽");
+                    temp = temp.replaceAll("졍", "정");
+                    temp = temp.replaceAll("쪙", "쩡");
+                    temp = temp.replaceAll("쳥", "청");
                 } else if (existMap == jungMap) {
                     String jung = jungMap.getOrDefault(word.substring(j, j + end + 1), "");
                     int jongEndIndex = end + 1 + getJongEndIndex(word.substring(j + end + 1));
@@ -501,6 +511,13 @@ public class Translator2Text {
                 if (temp != null) {
                     temp = temp.replaceAll("닾", "다.");
                     temp = temp.replaceAll("갚", "가.");
+                    temp = temp.replaceAll("낲", "나.");
+                    temp = temp.replaceAll("닡", "니?");
+                    temp = temp.replaceAll("낰", "나!");
+                    temp = temp.replaceAll("닽", "다(");
+                    temp = temp.replaceAll("쳍", "체(");
+                    temp = temp.replaceAll("랕", "라(");
+                    temp = temp.replaceAll("욭", "요?");
                 }
                 if (word.charAt(j) == '⠴' && existMap == null) {
                     english = true;
