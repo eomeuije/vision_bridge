@@ -95,22 +95,32 @@
                 <button id="downloadButton" class="shared-button" aria-label="BRF 파일 다운로드" tabindex="13" style="visibility: hidden;">
                     <i class="fa-regular fa-circle-down"></i> BRF 다운로드
                 </button>
-                <!-- 음성 출력 버튼 -->
-                <button id="voiceButton" class="shared-button" aria-label="번역 결과 음성 출력" tabindex="14">
-                    <i class="fa-solid fa-play"></i> 번역 결과 음성 출력
-                </button>
-            </div>
-            <!-- 음성 속도 버튼 -->
-            <div class="voice-settings">
-                <label for="voiceRate">
-                    <i class="fa-solid fa-tachometer-alt"></i> 음성 속도:
-                </label>
-                <select id="voiceRate" class="form-select">
-                    <option value="0.5">느림 (0.5x)</option>
-                    <option value="1" selected>보통 (1x)</option>
-                    <option value="1.5">빠름 (1.5x)</option>
-                    <option value="2">매우 빠름 (2x)</option>
-                </select>
+                <!-- tts-->
+                <div class="output-header">
+                    <h4>번역 결과 음성 출력</h4>
+                </div>
+
+                <!-- 음성 컨트롤 버튼 -->
+                <div class="tts-controls">
+                    <button id="resetButton" class="tts-button">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button id="rewindButton" class="tts-button">
+                        <i class="fa-solid fa-backward"></i>
+                    </button>
+                    <button id="playPauseButton" class="tts-button">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button id="skipButton" class="tts-button">
+                        <i class="fa-solid fa-forward"></i>
+                    </button>
+                    <select id="voiceRate" class="tts-dropdown">
+                        <option value="0.5">0.5x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -187,6 +197,7 @@
         updateImageUploadButton();
         updateDocumentUploadButton();
         updateBRFButton();
+        updateTTSButton();
         updateKeyboardButton();
         closeKeyboard();
     }
@@ -464,24 +475,138 @@
     });
 
     // 음성 출력 버튼
-    document.getElementById('voiceButton').addEventListener('click', function () {
-        const text = document.getElementById('outputText').value; // 출력 텍스트 가져오기
-        const rate = parseFloat(document.getElementById('voiceRate').value); // 선택된 음성 속도
-        console.log('선택된 음성 속도:', rate);
+    window.onload = function() {
+        updateTTSButton();
+    };
 
-        if (text) {
-            const speech = new SpeechSynthesisUtterance(text);
-            speech.lang = 'ko-KR';
-            speech.rate = rate; // 사용자 선택 속도 적용
-            console.log('적용된 음성 속도:', speech.rate);
-            window.speechSynthesis.speak(speech);
-        } else {
-            alert('번역 결과가 없습니다.');
+    function updateTTSButton() {
+        const ttsControls = document.querySelector('.tts-controls'); // 전체 TTS 컨트롤
+        const ttsHeader = document.querySelector('.output-header'); // "번역 결과 음성 출력" 제목
+
+        if (ttsControls && ttsHeader) {
+            if (isBrailleToText) {
+                ttsControls.style.display = 'flex'; // TTS 버튼 보이기
+                ttsHeader.style.display = 'block'; // 제목 보이기
+            } else {
+                ttsControls.style.display = 'none'; // TTS 버튼 숨기기
+                ttsHeader.style.display = 'none'; // 제목 숨기기
+            }
         }
+    }
+
+    // TTS 컨트롤 변수
+    let isPlaying = false; // 현재 재생 상태
+    let utterance = null;  // 현재 실행 중인 음성 객체
+    let currentPosition = 0; // 현재까지 읽은 텍스트 길이
+    let textContent = ""; // 전체 읽을 텍스트
+
+    // TTS 재생/정지 버튼
+    document.getElementById('playPauseButton').addEventListener('click', function () {
+        let text = document.getElementById('outputText').value; // 읽을 텍스트 가져오기
+        let rate = parseFloat(document.getElementById('voiceRate').value); // 속도 설정
+        let playButton = document.getElementById('playPauseButton'); // 버튼 참조
+        let playIcon = playButton.querySelector('i'); // 버튼 안의 아이콘 참조
+
+        if (text.trim() === "") {
+            console.warn("TTS 재생할 텍스트가 없습니다!");
+            return;
+        }
+
+        // 기존 음성이 재생 중이면 멈춤
+        if (isPlaying) {
+            window.speechSynthesis.cancel();
+            console.log("음성 정지됨");
+            playIcon.classList.remove("fa-stop");
+            playIcon.classList.add("fa-play");
+            isPlaying = false;
+            return;
+        }
+
+        // 새롭게 재생해야 하는 경우
+        textContent = text;
+        startTTS(textContent, currentPosition, rate);
+    });
+
+    // 특정 위치부터 실행하는 함수
+    function startTTS(text, position, rate) {
+        let playButton = document.getElementById('playPauseButton');
+        let playIcon = playButton.querySelector('i');
+
+        // 현재 위치에서 남은 텍스트만 가져오기
+        let textToRead = text.substring(position);
+
+        // 새로운 음성 객체 생성
+        utterance = new SpeechSynthesisUtterance(textToRead);
+        utterance.rate = rate; // 음성 속도 설정
+        utterance.lang = 'ko-KR'; // 한국어 설정
+
+        // 음성 진행 중 문자의 위치 업데이트
+        utterance.onboundary = function (event) {
+            currentPosition = position + event.charIndex; // 현재 읽은 문자의 인덱스 업데이트
+            console.log(`현재 위치 업데이트: ${currentPosition}`);
+        };
+
+        // 음성이 끝나면 상태 초기화
+        utterance.onend = function () {
+            console.log("음성 재생 종료됨");
+            playIcon.classList.remove("fa-stop");
+            playIcon.classList.add("fa-play");
+            isPlaying = false;
+        };
+
+        // 음성 재생
+        window.speechSynthesis.speak(utterance);
+        isPlaying = true;
+
+        // 버튼 아이콘 변경 (재생 → 정지)
+        playIcon.classList.remove("fa-play");
+        playIcon.classList.add("fa-stop");
+    }
+
+    // 앞으로 5초 이동 버튼
+    document.getElementById('skipButton').addEventListener('click', function () {
+        if (!isPlaying || !utterance) return;
+
+        // 기존 음성 중지
+        window.speechSynthesis.cancel();
+
+        // 5초 후 위치로 이동
+        let newPosition = Math.min(currentPosition + 30, textContent.length); // 30자 = 약 5초
+
+        // 새로운 위치에서 다시 음성 재생
+        startTTS(textContent, newPosition, parseFloat(document.getElementById('voiceRate').value));
+    });
+
+    // 뒤로 5초 이동 버튼
+    document.getElementById('rewindButton').addEventListener('click', function () {
+        if (!isPlaying || !utterance) return;
+
+        // 기존 음성 중지
+        window.speechSynthesis.cancel();
+
+        // 5초 전 위치로 이동
+        let newPosition = Math.max(currentPosition - 30, 0); // 30자 = 약 5초
+
+        // 새로운 위치에서 다시 음성 재생
+        startTTS(textContent, newPosition, parseFloat(document.getElementById('voiceRate').value));
+    });
+
+    // TTS 초기화
+    document.getElementById('resetButton').addEventListener('click', function () {
+        // 기존 음성 중지
+        window.speechSynthesis.cancel();
+        // 현재 읽은 위치 초기화
+        currentPosition = 0;
+        // 버튼 상태 초기화
+        let playButton = document.getElementById('playPauseButton');
+        let playIcon = playButton.querySelector('i');
+        playIcon.classList.remove("fa-stop");
+        playIcon.classList.add("fa-play");
+        isPlaying = false;
     });
 
     // 점자 가상 키보드
-    let brailleMap = { //flask-ai/braille_map.json 연계해서 사용예정
+    let brailleMap = {
         "000000": " ",
         "000001": "⠠",
         "000010": "⠐",
