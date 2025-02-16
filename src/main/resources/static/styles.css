@@ -223,6 +223,43 @@ textarea {
     height: 40px;
 }
 
+.tts-progress-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+#ttsSeekBar {
+    width: 60%;
+    -webkit-appearance: none;
+    background: #ddd;
+    height: 5px;
+    border-radius: 5px;
+    outline: none;
+    transition: background 0.2s;
+}
+
+#ttsSeekBar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#ttsSeekBar::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 /* 가상 키보드 팝업 */
 .keyboard-popup {
     display: none;

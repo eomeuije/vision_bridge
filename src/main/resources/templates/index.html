@@ -99,6 +99,12 @@
                 <div class="output-header">
                     <h4>번역 결과 음성 출력</h4>
                 </div>
+                <!-- 음성 진행률 바 (음악 앱 스타일) -->
+                <div class="tts-progress-container">
+                    <span id="ttsCurrentTime">00:00</span>
+                    <input type="range" id="ttsSeekBar" min="0" max="100" value="0" step="1">
+                    <span id="ttsTotalTime">00:00</span>
+                </div>
 
                 <!-- 음성 컨트롤 버튼 -->
                 <div class="tts-controls">
@@ -494,116 +500,216 @@
         }
     }
 
-    // TTS 컨트롤 변수
-    let isPlaying = false; // 현재 재생 상태
-    let utterance = null;  // 현재 실행 중인 음성 객체
-    let currentPosition = 0; // 현재까지 읽은 텍스트 길이
-    let textContent = ""; // 전체 읽을 텍스트
+    // TTS 관련 변수
+    let isPlaying = false;
+    let utterance = null;
+    let currentPosition = 0;
+    let textContent = "";
+    let totalTextLength = 0;
+    let currentCharIndex = 0;
+    let isSeeking = false;
+    let updateProgressInterval = null;
 
     // TTS 재생/정지 버튼
     document.getElementById('playPauseButton').addEventListener('click', function () {
-        let text = document.getElementById('outputText').value; // 읽을 텍스트 가져오기
-        let rate = parseFloat(document.getElementById('voiceRate').value); // 속도 설정
-        let playButton = document.getElementById('playPauseButton'); // 버튼 참조
-        let playIcon = playButton.querySelector('i'); // 버튼 안의 아이콘 참조
+        let text = document.getElementById('outputText').value;
+        let rate = parseFloat(document.getElementById('voiceRate').value);
+        let playButton = document.getElementById('playPauseButton');
+        let playIcon = playButton.querySelector('i');
 
         if (text.trim() === "") {
-            console.warn("TTS 재생할 텍스트가 없습니다!");
             return;
         }
 
-        // 기존 음성이 재생 중이면 멈춤
+        // 재생 중이면 정지
         if (isPlaying) {
-            window.speechSynthesis.cancel();
-            console.log("음성 정지됨");
-            playIcon.classList.remove("fa-stop");
-            playIcon.classList.add("fa-play");
-            isPlaying = false;
+            stopTTS();
             return;
         }
 
         // 새롭게 재생해야 하는 경우
         textContent = text;
+        totalTextLength = text.length;
         startTTS(textContent, currentPosition, rate);
     });
 
-    // 특정 위치부터 실행하는 함수
+    // TTS 시작 함수
     function startTTS(text, position, rate) {
         let playButton = document.getElementById('playPauseButton');
         let playIcon = playButton.querySelector('i');
 
-        // 현재 위치에서 남은 텍스트만 가져오기
-        let textToRead = text.substring(position);
+        // 기존 음성 중지 후 200ms 후 재생
+        window.speechSynthesis.cancel();
+        setTimeout(() => {
+            utterance = new SpeechSynthesisUtterance(text.substring(position));
+            utterance.rate = rate;
+            utterance.lang = 'ko-KR';
 
-        // 새로운 음성 객체 생성
-        utterance = new SpeechSynthesisUtterance(textToRead);
-        utterance.rate = rate; // 음성 속도 설정
-        utterance.lang = 'ko-KR'; // 한국어 설정
+            // 진행률 업데이트 시작
+            currentCharIndex = position;
+            updateProgressUI();
+            startProgressUpdater();
 
-        // 음성 진행 중 문자의 위치 업데이트
-        utterance.onboundary = function (event) {
-            currentPosition = position + event.charIndex; // 현재 읽은 문자의 인덱스 업데이트
-            console.log(`현재 위치 업데이트: ${currentPosition}`);
-        };
+            // 음성 종료 이벤트
+            utterance.onend = function () {
+                stopTTS();
+            };
 
-        // 음성이 끝나면 상태 초기화
-        utterance.onend = function () {
-            console.log("음성 재생 종료됨");
+            // 음성 재생
+            window.speechSynthesis.speak(utterance);
+            isPlaying = true;
+
+            // 버튼 아이콘 변경 (재생 → 정지)
+            playIcon.classList.remove("fa-play");
+            playIcon.classList.add("fa-stop");
+        }, 200);
+    }
+
+    // TTS 정지 함수
+    function stopTTS() {
+        window.speechSynthesis.cancel();
+        isPlaying = false;
+        updateButtonIcon(false);
+    }
+
+    // **재생/정지 버튼 아이콘 업데이트**
+    function updateButtonIcon(playing) {
+        let playButton = document.getElementById('playPauseButton');
+        let playIcon = playButton.querySelector('i');
+        if (playing) {
+            playIcon.classList.remove("fa-play");
+            playIcon.classList.add("fa-stop");
+        } else {
             playIcon.classList.remove("fa-stop");
             playIcon.classList.add("fa-play");
-            isPlaying = false;
-        };
-
-        // 음성 재생
-        window.speechSynthesis.speak(utterance);
-        isPlaying = true;
-
-        // 버튼 아이콘 변경 (재생 → 정지)
-        playIcon.classList.remove("fa-play");
-        playIcon.classList.add("fa-stop");
+        }
     }
+
+    // 진행률 바 & 시간 업데이트
+    function updateProgressUI() {
+        let seekBar = document.getElementById("ttsSeekBar");
+        let currentTimeLabel = document.getElementById("ttsCurrentTime");
+        let totalTimeLabel = document.getElementById("ttsTotalTime");
+
+        let progressPercent = Math.round((currentCharIndex / totalTextLength) * 100);
+        seekBar.value = progressPercent;
+
+        currentTimeLabel.textContent = formatTime(currentCharIndex);
+        totalTimeLabel.textContent = formatTime(totalTextLength);
+    }
+
+    // 진행률 업데이트 타이머 실행
+    function startProgressUpdater() {
+        if (updateProgressInterval) clearInterval(updateProgressInterval);
+        updateProgressInterval = setInterval(() => {
+            if (window.speechSynthesis.speaking) {
+                currentCharIndex += 6; // 대략 6글자가 1초에 해당
+                updateProgressUI();
+            } else {
+                clearInterval(updateProgressInterval);
+                updateProgressInterval = null;
+            }
+        }, 1000);
+    }
+
+    // 텍스트 길이를 시간 형식으로 변환 (예: 00:15)
+    function formatTime(charCount) {
+        let seconds = Math.floor(charCount / 6); // 6글자 ≈ 1초
+        let minutes = Math.floor(seconds / 60);
+        seconds = seconds % 60;
+        return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    // 사용자가 진행 바를 조작하면 해당 위치에서 재생
+    document.getElementById("ttsSeekBar").addEventListener("input", function (event) {
+        isSeeking = true;
+        let seekPercent = event.target.value / 100;
+        let newCharIndex = Math.round(seekPercent * totalTextLength);
+        document.getElementById("ttsCurrentTime").textContent = formatTime(newCharIndex);
+    });
+
+    // 스크럽 바 변경 후 손을 떼면 해당 위치에서 재생
+    document.getElementById("ttsSeekBar").addEventListener("change", function (event) {
+        isSeeking = false;
+        let seekPercent = event.target.value / 100;
+        let newCharIndex = Math.round(seekPercent * totalTextLength);
+
+        // 기존 음성 정지 후 새로운 위치에서 재생
+        currentCharIndex = newCharIndex;
+        startTTS(document.getElementById("outputText").value, currentCharIndex, parseFloat(document.getElementById('voiceRate').value));
+    });
+
+
+    // 스크럽 바 변경 후 손을 떼면 해당 위치에서 재생
+    document.getElementById("ttsSeekBar").addEventListener("change", function (event) {
+        isSeeking = false;
+        let seekPercent = event.target.value / 100;
+        let newCharIndex = Math.round(seekPercent * totalTextLength);
+
+        // 기존 음성 정지 후 새로운 위치에서 재생
+        currentCharIndex = newCharIndex;
+        startTTS(document.getElementById("outputText").value, currentCharIndex, parseFloat(document.getElementById('voiceRate').value));
+    });
 
     // 앞으로 5초 이동 버튼
     document.getElementById('skipButton').addEventListener('click', function () {
         if (!isPlaying || !utterance) return;
 
-        // 기존 음성 중지
-        window.speechSynthesis.cancel();
+        // 현재 진행 중인 위치(문자 수)를 기반으로 5초 후 위치 계산
+        let currentTime = currentCharIndex / 6; // 6글자 ≈ 1초
+        let newTime = currentTime + 5; // 5초 뒤
 
-        // 5초 후 위치로 이동
-        let newPosition = Math.min(currentPosition + 30, textContent.length); // 30자 = 약 5초
+        let newPosition = Math.min(Math.round(newTime * 6), textContent.length); // 6글자 ≈ 1초
+
+        // 현재 위치 업데이트
+        currentPosition = newPosition;
+        currentCharIndex = newPosition;
 
         // 새로운 위치에서 다시 음성 재생
-        startTTS(textContent, newPosition, parseFloat(document.getElementById('voiceRate').value));
+        startTTS(textContent, currentPosition, parseFloat(document.getElementById('voiceRate').value));
     });
 
     // 뒤로 5초 이동 버튼
     document.getElementById('rewindButton').addEventListener('click', function () {
         if (!isPlaying || !utterance) return;
 
-        // 기존 음성 중지
-        window.speechSynthesis.cancel();
+        // 현재 진행 중인 위치(문자 수)를 기반으로 5초 전 위치 계산
+        let currentTime = currentCharIndex / 6; // 6글자 ≈ 1초
+        let newTime = Math.max(currentTime - 5, 0); // 5초 전 (0초 이하로 내려가지 않도록)
 
-        // 5초 전 위치로 이동
-        let newPosition = Math.max(currentPosition - 30, 0); // 30자 = 약 5초
+        let newPosition = Math.round(newTime * 6); // 6글자 ≈ 1초
+
+        // 현재 위치 업데이트
+        currentPosition = newPosition;
+        currentCharIndex = newPosition;
 
         // 새로운 위치에서 다시 음성 재생
-        startTTS(textContent, newPosition, parseFloat(document.getElementById('voiceRate').value));
+        startTTS(textContent, currentPosition, parseFloat(document.getElementById('voiceRate').value));
     });
 
-    // TTS 초기화
+    // TTS 초기화 버튼 (Reset)
     document.getElementById('resetButton').addEventListener('click', function () {
-        // 기존 음성 중지
+        // 기존 음성 정지
         window.speechSynthesis.cancel();
+
         // 현재 읽은 위치 초기화
         currentPosition = 0;
+        currentCharIndex = 0;
+        isPlaying = false;
+
         // 버튼 상태 초기화
         let playButton = document.getElementById('playPauseButton');
         let playIcon = playButton.querySelector('i');
         playIcon.classList.remove("fa-stop");
         playIcon.classList.add("fa-play");
-        isPlaying = false;
+
+        // 진행률 바 및 시간 UI 즉시 초기화
+        document.getElementById("ttsSeekBar").value = 0;
+        document.getElementById("ttsCurrentTime").textContent = "00:00";
+        document.getElementById("ttsTotalTime").textContent = formatTime(totalTextLength);
+
     });
+
 
     // 점자 가상 키보드
     let brailleMap = {
