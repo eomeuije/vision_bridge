@@ -239,6 +239,9 @@
             return;
         }
 
+        // 기존 음성 출력을 초기화
+        stopTTS();  // 기존 음성 중지 및 UI 리셋
+
         // API 호출
         const endpoint = isBrailleToText ? '/translate/toText' : '/translate/toBraille';
         fetch(endpoint, {
@@ -254,6 +257,7 @@
             })
             .then(data => {
                 document.getElementById('outputText').value = data; // 번역 결과 출력
+                resetTTS();  // 새로운 결과가 나오면 TTS 초기화
             })
             .catch(error => {
                 console.error('번역 중 오류 발생:', error);
@@ -526,71 +530,143 @@
     let totalTextLength = 0;
     let currentCharIndex = 0;
     let isSeeking = false;
+    let isPaused = false;
     let updateProgressInterval = null;
 
     // TTS 재생/정지 버튼
     document.getElementById('playPauseButton').addEventListener('click', function () {
         let text = document.getElementById('outputText').value;
         let rate = parseFloat(document.getElementById('voiceRate').value);
-        let playButton = document.getElementById('playPauseButton');
-        let playIcon = playButton.querySelector('i');
 
-        if (text.trim() === "") {
-            return;
-        }
+        if (text.trim() === "") return;
 
-        // 재생 중이면 정지
         if (isPlaying) {
             stopTTS();
-            return;
+        } else {
+            if (isPaused) {
+                resumeTTS(); // 정지한 위치에서 다시 시작
+            } else {
+                startTTS(text, currentPosition, rate); // 새로 시작
+            }
         }
+    });
 
-        // 새롭게 재생해야 하는 경우
-        textContent = text;
-        totalTextLength = text.length;
-        startTTS(textContent, currentPosition, rate);
+    // 배속 변경
+    document.getElementById('voiceRate').addEventListener('change', function () {
+        let newRate = parseFloat(this.value);
+
+        if (isPlaying) {
+            // 현재 재생 중인 위치 저장 (2글자 앞에서 다시 시작)
+            let tempPosition = Math.max(currentPosition - 2, 0);
+
+            // 현재 음성을 중지하고, 새로운 배속으로 다시 재생
+            window.speechSynthesis.cancel();
+            startTTS(textContent, tempPosition, newRate);
+        } else if (isPaused) {
+            // 정지 상태에서 배속 변경하면, 다시 재생 시 반영되도록 설정
+            savedRate = newRate;
+        }
     });
 
     // TTS 시작 함수
-    function startTTS(text, position, rate) {
+    function startTTS(text, position, rate = null) {
         let playButton = document.getElementById('playPauseButton');
         let playIcon = playButton.querySelector('i');
 
-        // 기존 음성 중지 후 200ms 후 재생
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-            utterance = new SpeechSynthesisUtterance(text.substring(position));
-            utterance.rate = rate;
-            utterance.lang = 'ko-KR';
+        if (!isPaused) {
+            window.speechSynthesis.cancel();
+        }
 
-            // 진행률 업데이트 시작
-            currentCharIndex = position;
-            updateProgressUI();
-            startProgressUpdater();
+        // 배속 값이 null이면 드롭다운에서 가져옴
+        if (rate === null) {
+            rate = parseFloat(document.getElementById('voiceRate').value);
+        }
 
-            // 음성 종료 이벤트
-            utterance.onend = function () {
-                stopTTS();
-            };
+        // 새로운 음성 객체 생성
+        utterance = new SpeechSynthesisUtterance(text.substring(position));
+        utterance.rate = rate; // 배속 반영
+        utterance.lang = 'ko-KR';
 
-            // 음성 재생
-            window.speechSynthesis.speak(utterance);
-            isPlaying = true;
+        currentCharIndex = position;
+        currentPosition = position;
+        textContent = text;
+        totalTextLength = text.length;
+        isPaused = false;
 
-            // 버튼 아이콘 변경 (재생 → 정지)
-            playIcon.classList.remove("fa-play");
-            playIcon.classList.add("fa-stop");
-        }, 200);
+        // 진행률 업데이트 시작
+        updateProgressUI();
+        startProgressUpdater();
+
+        // 음성 종료 시 stopTTS() 호출
+        utterance.onend = function () {
+            stopTTS();
+        };
+
+        // 음성 재생
+        window.speechSynthesis.speak(utterance);
+        isPlaying = true;
+
+        // 버튼 아이콘 변경 (재생 → 정지)
+        playIcon.classList.remove("fa-play");
+        playIcon.classList.add("fa-stop");
     }
 
     // TTS 정지 함수
     function stopTTS() {
-        window.speechSynthesis.cancel();
-        isPlaying = false;
-        updateButtonIcon(false);
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.pause();
+            isPlaying = false;
+            isPaused = true;
+
+            if (updateProgressInterval) {
+                clearInterval(updateProgressInterval);
+                updateProgressInterval = null;
+            }
+            updateButtonIcon(false);
+        }
     }
 
-    // **재생/정지 버튼 아이콘 업데이트**
+    // TTS 다시 재생 함수
+    function resumeTTS() {
+        if (!textContent || currentPosition >= textContent.length) return; // 번역된 텍스트가 없거나 끝에 도달했으면 종료
+        let newRate = parseFloat(document.getElementById('voiceRate').value); // 현재 선택한 배속 가져오기
+        window.speechSynthesis.cancel();
+        utterance = new SpeechSynthesisUtterance(textContent.substring(currentPosition));
+        utterance.rate = newRate; // 변경된 배속 적용
+        utterance.lang = 'ko-KR';
+
+        utterance.onend = function () {
+            stopTTS();
+        };
+
+        // 새롭게 재생
+        window.speechSynthesis.speak(utterance);
+        isPlaying = true;
+        isPaused = false;
+
+        // UI 업데이트
+        updateButtonIcon(true);
+        startProgressUpdater();
+    }
+
+    // TTS 초기화 (완전히 정지 후 0초부터 재생)
+    function resetTTS() {
+        window.speechSynthesis.cancel();  // 현재 음성 중지
+        isPlaying = false;
+        isPaused = false;
+        currentPosition = 0;
+        currentCharIndex = 0;
+        textContent = "";
+        totalTextLength = 0;
+
+        // UI 업데이트
+        updateButtonIcon(false);
+        document.getElementById("ttsSeekBar").value = 0;
+        document.getElementById("ttsCurrentTime").textContent = "00:00";
+        document.getElementById("ttsTotalTime").textContent = "00:00";
+    }
+
+    // 재생/정지 버튼 아이콘 업데이트
     function updateButtonIcon(playing) {
         let playButton = document.getElementById('playPauseButton');
         let playIcon = playButton.querySelector('i');
@@ -675,9 +751,8 @@
 
         // 현재 진행 중인 위치(문자 수)를 기반으로 5초 후 위치 계산
         let currentTime = currentCharIndex / 6; // 6글자 ≈ 1초
-        let newTime = currentTime + 5; // 5초 뒤
-
-        let newPosition = Math.min(Math.round(newTime * 6), textContent.length); // 6글자 ≈ 1초
+        let newTime = Math.min(currentTime + 5, totalTextLength / 6); // 5초 뒤
+        let newPosition = Math.round(newTime * 6); // 6글자 ≈ 1초
 
         // 현재 위치 업데이트
         currentPosition = newPosition;
@@ -689,7 +764,7 @@
 
     // 뒤로 5초 이동 버튼
     document.getElementById('rewindButton').addEventListener('click', function () {
-        if (!isPlaying || !utterance) return;
+        if (!isPlaying && !isPaused) return;
 
         // 현재 진행 중인 위치(문자 수)를 기반으로 5초 전 위치 계산
         let currentTime = currentCharIndex / 6; // 6글자 ≈ 1초
