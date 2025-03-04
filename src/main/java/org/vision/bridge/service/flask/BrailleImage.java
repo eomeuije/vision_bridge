@@ -59,7 +59,11 @@ public class BrailleImage {
                 throw new RuntimeException("Flask 서버 호출 실패: " + response.getStatusCode());
             }
         } catch (IOException e) {
-            throw new RuntimeException("파일 처리 중 오류 발생: " + e.getMessage(), e);
+            e.printStackTrace();
+            throw new RuntimeException("파일 처리 중 오류 발생", e);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("점자 인식 중 오류 발생", e);
         }
     }
 }
