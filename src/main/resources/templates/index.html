@@ -369,7 +369,7 @@
             .then(data => {
                 // 번역 방향에 따라 처리 결과 출력
                 if (isBrailleToText && data.braille_text) {
-                    document.getElementById('inputText').value = data.braille_text.join('\n'); // 점자 → 텍스트
+                    document.getElementById('inputText').value = data.braille_text; // 점자 → 텍스트
                 } else if (!isBrailleToText && data.text) {
                     document.getElementById('inputText').value = data.text; // 텍스트 → 점자
                 } else {
