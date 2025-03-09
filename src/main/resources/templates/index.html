@@ -417,14 +417,6 @@
         imageUploadEvent(file, event);
     });
 
-    // 문서 업로드
-    document.getElementById('documentUpload').addEventListener('change', function (event) {
-        const file = event.target.files[0];
-        if (file) {
-            alert(`문서 파일 선택: ${file.name}`);
-        }
-    });
-
     function documentUploadEvent(file, event) {
         const loadingOverlay = document.getElementById("loadingOverlay");
         loadingOverlay.style.display = "flex"; // 변환 중 오버레이 표시
@@ -610,14 +602,14 @@
             window.speechSynthesis.cancel();
         }
 
-        // 배속 값이 null이면 드롭다운에서 가져옴
+        // 배속 값 설정
         if (rate === null) {
             rate = parseFloat(document.getElementById('voiceRate').value);
         }
 
         // 새로운 음성 객체 생성
         utterance = new SpeechSynthesisUtterance(text.substring(position));
-        utterance.rate = rate; // 배속 반영
+        utterance.rate = rate;
         utterance.lang = 'ko-KR';
 
         currentCharIndex = position;
@@ -630,9 +622,9 @@
         updateProgressUI();
         startProgressUpdater();
 
-        // 음성 종료 시 stopTTS() 호출
+        // 음성이 끝까지 도달했을 때 초기화
         utterance.onend = function () {
-            stopTTS();
+            resetTTS();
         };
 
         // 음성 재생
@@ -684,7 +676,7 @@
 
     // TTS 초기화 (완전히 정지 후 0초부터 재생)
     function resetTTS() {
-        window.speechSynthesis.cancel();  // 현재 음성 중지
+        window.speechSynthesis.cancel();
         isPlaying = false;
         isPaused = false;
         currentPosition = 0;
@@ -696,7 +688,7 @@
         updateButtonIcon(false);
         document.getElementById("ttsSeekBar").value = 0;
         document.getElementById("ttsCurrentTime").textContent = "00:00";
-        document.getElementById("ttsTotalTime").textContent = "00:00";
+        document.getElementById("ttsTotalTime").textContent = formatTime(totalTextLength);
     }
 
     // 재생/정지 버튼 아이콘 업데이트
@@ -754,18 +746,6 @@
         let newCharIndex = Math.round(seekPercent * totalTextLength);
         document.getElementById("ttsCurrentTime").textContent = formatTime(newCharIndex);
     });
-
-    // 스크럽 바 변경 후 손을 떼면 해당 위치에서 재생
-    document.getElementById("ttsSeekBar").addEventListener("change", function (event) {
-        isSeeking = false;
-        let seekPercent = event.target.value / 100;
-        let newCharIndex = Math.round(seekPercent * totalTextLength);
-
-        // 기존 음성 정지 후 새로운 위치에서 재생
-        currentCharIndex = newCharIndex;
-        startTTS(document.getElementById("outputText").value, currentCharIndex, parseFloat(document.getElementById('voiceRate').value));
-    });
-
 
     // 스크럽 바 변경 후 손을 떼면 해당 위치에서 재생
     document.getElementById("ttsSeekBar").addEventListener("change", function (event) {
