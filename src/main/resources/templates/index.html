@@ -26,6 +26,14 @@
     </button>
 </div>
 
+<!-- 변환 중 오버레이 -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-box">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>변환 중...</p>
+    </div>
+</div>
+
 <!-- 입출력 영역 -->
 <div class="container">
     <div class="translator-container">
@@ -184,7 +192,7 @@
 
         // 입력 및 출력 플레이스홀더 전환
         inputText.placeholder = isBrailleToText
-            ? "점자를 입력하세요.   또는 문서/이미지를 드래그 앤 드롭하세요."
+            ? "점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요."
             : "비점자를 입력하세요. 또는 문서/이미지를 드래그 앤 드롭하세요.";
         outputText.placeholder = isBrailleToText
             ? "번역 결과가 비점자로 표시됩니다."
@@ -192,11 +200,12 @@
 
         // 입력 및 출력 값 초기화
         // 출력이 존재할 경우 입력으로 이동
-        if (outputText.value) {
-            inputText.value = outputText.value;
-        } else {
-            inputText.value = '';
-        }
+        // if (outputText.value) {
+        //     inputText.value = outputText.value;
+        // } else {
+        //     inputText.value = '';
+        // }
+        inputText.value = '';
         outputText.value = '';
 
         // 버튼 업데이트
@@ -261,7 +270,7 @@
             })
             .catch(error => {
                 console.error('번역 중 오류 발생:', error);
-                alert(`번역 중 오류 발생: ${error.message}`);
+                alert(`번역 중 문제가 발생했습니다. 다시 시도해주세요.`);
             });
     });
 
@@ -348,6 +357,9 @@
     });
 
     function imageUploadEvent(file, event) {
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        loadingOverlay.style.display = "flex"; // 변환 중 오버레이 표시
+
         // 번역 방향에 따른 Spring 컨트롤러 경로
         const endpoint = isBrailleToText
             ? '/api/brailleImg'  // 점자 이미지를 텍스트로 변환
@@ -356,13 +368,15 @@
         const formData = new FormData();
         formData.append("file", file);
 
+        const startTime = Date.now(); // 시작 시간 기록
+
         fetch(endpoint, {
             method: 'POST',
             body: formData,
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Spring 서버와의 통신 오류: ${response.statusText}`);
+                    throw new Error(`서버와 연결할 수 없습니다. 인터넷 연결을 확인해주세요.`);
                 }
                 return response.json(); // JSON 응답 처리
             })
@@ -373,14 +387,22 @@
                 } else if (!isBrailleToText && data.text) {
                     document.getElementById('inputText').value = data.text; // 텍스트 → 점자
                 } else {
-                    alert("변환 결과를 가져올 수 없습니다.");
+                    alert("번역 중 문제가 발생했습니다. 다시 시도해주세요.");
                 }
             })
             .catch(error => {
-                console.error("Spring 서버 요청 중 오류 발생:", error);
-                alert(`Spring 서버 요청 중 오류 발생: ${error.message}`);
+                console.error("서버 요청 중 오류 발생:", error);
+                alert(`요청을 처리하는 동안 문제가 발생했습니다. 잠시 후 다시 시도해주세요.`);
             })
             .finally(() => {
+                const elapsedTime = Date.now() - startTime; // 실제 변환 소요 시간
+                const minDisplayTime = 500; // 최소 유지 시간 (0.5초)
+                const delay = Math.max(minDisplayTime - elapsedTime, 0); // 0.5초보다 짧으면 보정
+
+                setTimeout(() => {
+                    loadingOverlay.style.display = "none"; // 변환 완료 후 오버레이 숨기기
+                }, delay);
+
                 if (event) event.target.value = ""; // 파일 입력 초기화
             });
     }
@@ -404,12 +426,16 @@
     });
 
     function documentUploadEvent(file, event) {
-        // 번역 방향에 따른 서버 엔드포인트 설정
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        loadingOverlay.style.display = "flex"; // 변환 중 오버레이 표시
+
         const endpoint = isBrailleToText ? '/document/braille' : '/document/text';
         console.log(`서버로 요청 보냄: ${endpoint}`);
 
         const formData = new FormData();
         formData.append("file", file);
+
+        const startTime = Date.now(); // 시작 시간 기록
 
         fetch(endpoint, {
             method: 'POST',
@@ -417,20 +443,27 @@
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`업로드 실패: ${response.statusText}`);
+                    throw new Error(`파일 업로드에 실패했습니다.`);
                 }
                 return response.text();
             })
             .then(data => {
                 console.log("서버 응답 데이터:", data);
-                alert("문서 업로드 및 처리 완료!");
-                document.getElementById('inputText').value = data;
+                document.getElementById('inputText').value = data; // 입력 필드에 변환 결과 반영
             })
             .catch(error => {
                 console.error("업로드 중 오류 발생:", error.message);
-                alert(`업로드 중 오류 발생: ${error.message}`);
+                alert(`파일 업로드에 실패했습니다.`);
             })
             .finally(() => {
+                const elapsedTime = Date.now() - startTime;
+                const minDisplayTime = 500;
+                const delay = Math.max(minDisplayTime - elapsedTime, 0);
+
+                setTimeout(() => {
+                    loadingOverlay.style.display = "none";
+                }, delay);
+
                 if (event) event.target.value = ''; // 파일 입력 초기화
             });
     }
@@ -495,7 +528,7 @@
             })
             .catch(error => {
                 console.error("BRF 변환 오류:", error);
-                alert("BRF 변환 중 오류 발생");
+                alert("BRF 변환 중 오류 발생했습니다.");
             });
     });
 
