@@ -84,10 +84,16 @@
             </div>
         </div>
 
-        <!-- 양방향 화살표 -->
-        <div class="arrow-area">
-            <i class="arrow-icon fa-solid fa-arrow-right-arrow-left" id="translateArrow" role="button" aria-label="번역 방향 변경" tabindex="6"></i>
-            <button id="translateButton" class="btn btn-primary translate-button" aria-label="번역 실행" tabindex="7">번역</button>
+        <!-- 양방향 화살표 및 번역 버튼 -->
+        <div class="center-controls">
+            <i class="arrow-icon fa-solid fa-arrows-left-right" id="translateArrow" role="button" aria-label="번역 방향 변경" tabindex="6"></i>
+            <button id="translateButton" class="btn btn-primary">번역</button>
+        </div>
+
+        <!-- 모바일용 (초기엔 숨김) -->
+        <div class="arrow-and-button-mobile" style="display: none;">
+            <i class="arrow-icon fa-solid fa-arrows-up-down" id="translateArrowMobile" role="button" aria-label="번역 방향 변경" tabindex="6"></i>
+            <button id="translateButtonMobile" class="btn btn-primary">번역</button>
         </div>
 
         <!-- 텍스트 출력 영역 -->
@@ -105,9 +111,9 @@
                 </button>
                 <!-- tts-->
                 <div class="output-header">
-                    <h4>번역 결과 음성 출력</h4>
+                    <h5>번역 결과 음성 출력</h5>
                 </div>
-                <!-- 음성 진행률 바 (음악 앱 스타일) -->
+                <!-- 음성 진행률 바 -->
                 <div class="tts-progress-container">
                     <span id="ttsCurrentTime">00:00</span>
                     <input type="range" id="ttsSeekBar" min="0" max="100" value="0" step="1">
@@ -239,8 +245,20 @@
         }
     });
 
+    // 모바일 화살표 아이콘 이벤트 연결
+    const translateArrowMobile = document.getElementById('translateArrowMobile');
+
+    translateArrowMobile?.addEventListener('click', changeDirection);
+
+    translateArrowMobile?.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.click();
+        }
+    });
+
     // 번역 버튼 동작
-    document.getElementById('translateButton').addEventListener('click', function () {
+    function handleTranslate() {
         const inputValue = document.getElementById('inputText').value;
 
         if (!inputValue) {
@@ -272,7 +290,13 @@
                 console.error('번역 중 오류 발생:', error);
                 alert(`번역 중 문제가 발생했습니다. 다시 시도해주세요.`);
             });
-    });
+    }
+
+    // PC 번역 버튼
+    document.getElementById('translateButton')?.addEventListener('click', handleTranslate);
+
+    // 모바일 번역 버튼
+    document.getElementById('translateButtonMobile')?.addEventListener('click', handleTranslate);
 
     // 이미지 업로드 버튼 상태 업데이트 함수
     function updateImageUploadButton() {
@@ -530,20 +554,18 @@
     };
 
     function updateTTSButton() {
-        const ttsControls = document.querySelector('.tts-controls'); // TTS 컨트롤 버튼들
-        const ttsHeader = document.querySelector('.output-header'); // "번역 결과 음성 출력" 제목
-        const ttsProgressBar = document.querySelector('.tts-progress-container'); // 진행 바
+        const ttsControls = document.querySelector('.tts-controls');
+        const ttsHeader = document.querySelector('.output-header');
+        const ttsProgress = document.querySelector('.tts-progress-container');
 
-        if (ttsControls && ttsHeader && ttsProgressBar) {
-            if (isBrailleToText) {
-                ttsControls.style.display = 'flex'; // TTS 버튼 보이기
-                ttsHeader.style.display = 'block'; // 제목 보이기
-                ttsProgressBar.style.display = 'flex'; // 진행 바 보이기
-            } else {
-                ttsControls.style.display = 'none'; // TTS 버튼 숨기기
-                ttsHeader.style.display = 'none'; // 제목 숨기기
-                ttsProgressBar.style.display = 'none'; // 진행 바 숨기기
-            }
+        if (isBrailleToText) {
+            ttsControls.style.display = 'flex';
+            ttsHeader.style.display = 'block';
+            ttsProgress.style.display = 'flex';
+        } else {
+            ttsControls.style.display = 'none';
+            ttsHeader.style.display = 'none';
+            ttsProgress.style.display = 'none';
         }
     }
 
@@ -960,6 +982,26 @@
             hole.classList.remove('active');
         });
     }
+
+    function updateArrowIcon() {
+        const desktopArrow = document.getElementById('translateArrow');
+        const mobileArrow = document.getElementById('translateArrowMobile');
+
+        if (window.innerWidth < 768) {
+            desktopArrow?.classList.remove('fa-arrows-left-right');
+            desktopArrow?.classList.add('fa-arrows-up-down');
+            mobileArrow?.classList.remove('fa-arrows-left-right');
+            mobileArrow?.classList.add('fa-arrows-up-down');
+        } else {
+            desktopArrow?.classList.remove('fa-arrows-up-down');
+            desktopArrow?.classList.add('fa-arrows-left-right');
+            mobileArrow?.classList.remove('fa-arrows-up-down');
+            mobileArrow?.classList.add('fa-arrows-left-right');
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', updateArrowIcon);
+    window.addEventListener('resize', updateArrowIcon);
 
 </script>
 </body>
