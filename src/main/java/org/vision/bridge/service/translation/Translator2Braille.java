@@ -1,5 +1,6 @@
 package org.vision.bridge.service.translation;
 
+import org.junit.jupiter.api.Test;
 import org.springframework.stereotype.Service;
 import org.vision.bridge.service.utils.EnglishUtils;
 import org.vision.bridge.service.utils.JamoUtils;

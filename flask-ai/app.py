@@ -1,11 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 import cv2
 import numpy as np
 import json
 import os
 import math
 from dotenv import load_dotenv
-from sklearn.cluster import DBSCAN
 from collections import Counter
 
 # 특정 파일 로드
@@ -75,7 +74,7 @@ def detect_braille_dots(binary, min_radius):
                 minor_axis = major_axis
                 major_axis = temp
             # 너무 작거나 한쪽으로만 긴 타원을 제거
-            if minor_axis > 4 and (major_axis + minor_axis) / min_radius > 4 and major_axis / minor_axis / 4 < 2.5:
+            if minor_axis > 4 and (major_axis + minor_axis) / min_radius > 10 and major_axis / minor_axis / 4 < 2.5:
                 detected_dots.append((int(x), int(y), (major_axis + minor_axis) / 4))
 
     return detected_dots
@@ -150,6 +149,8 @@ def process_braille_image(image, loop=8, threshold=5, start=0):
 
     for i in range(loop):
         threshold_value = int(base_threshold) - (i * threshold)
+        if threshold_value <= 0:
+            break
         binary = get_binary_image(image, threshold_value)
         new_dots = detect_braille_dots(binary, loop / ((loop - i) / 1.5))
 
@@ -162,19 +163,6 @@ def process_braille_image(image, loop=8, threshold=5, start=0):
     # 동떨어진 점 필터링
     detected_dots = filter_isolated_dots(detected_dots, min_distance=1)
     return detected_dots
-
-def draw_detected_dots(img, detected_dots):
-    """검출된 점을 원본 이미지에 표시"""
-    for x, y in detected_dots:
-        cv2.circle(img, (int(x), int(y)), 2, (0, 255, 0), 2)  # 초록색 원 표시
-        cv2.circle(img, (int(x), int(y)), 2, (0, 0, 255), 3)  # 중심점 표시
-
-def draw_detected_dots_img(image, detected_dots):
-    image = resize_min_size(image)
-
-    for x, y, m in detected_dots:
-        cv2.circle(image, (int(x), int(y)), 2, (0, 255, 0), 2)  # 초록색 원 표시
-        cv2.circle(image, (int(x), int(y)), 2, (0, 0, 255), 3)  # 중심점 표시
 
 
 
@@ -266,26 +254,31 @@ BRAILLE_SPACING_RATIO = 3.2  # x점자 간격 비율
 BRAILLE_NEWLINE_RATIO = 5.4  # y점자 간격 비율
 BRAILLE_NEWLINE_RATIO = 5.4  # 점자 높이 비율
 
-def get_mode(li, tolerance=2):
+def get_mode(li, tolerance=5):
     modes = {}
     for i in li:
         is_new = True
-
+        v = None
+        f = None
         for value, freq in modes.items():
             if value - tolerance <= i <= value + tolerance:
-                modes[value] += 1
+                v = value
+                f = freq
                 is_new = False
                 break
 
         if is_new:
             modes[i] = 1
+        else:
+            modes.pop(v)
+            modes[(v+i)/2] = f + 1
 
-    mode_freq = -1
-    mode = None
-    for value, freq in modes.items():
-        if freq > mode_freq:
-            mode = value
-            mode_freq = freq
+    mode = 9999999
+    sorted_keys = sorted(modes, key=lambda k: modes[k], reverse=True)
+    for i, s in enumerate(sorted_keys):
+        if i >= 2:
+            break
+        mode = min(s, mode)
     return mode
 
 def get_pretty_shortest_dot(x1, y1, dots):
@@ -320,11 +313,12 @@ def find_mode_distance_and_slope(points):
     for i, (x1, y1) in enumerate(points):
         shortest_dot, shortest_distance, shortest_m = get_pretty_shortest_dot(x1, y1, points)
 
-        (x2, y2) = shortest_dot
-        if shortest_m < -135 or -45 < shortest_m < 45 or shortest_m > 135:
-            x_distances.append((shortest_distance, (x1, y1), (x2, y2), shortest_m))
-        else:
-            y_distances.append((shortest_distance, (x1, y1), (x2, y2), shortest_m))
+        if shortest_dot != None:
+            (x2, y2) = shortest_dot
+            if shortest_m < -135 or -45 < shortest_m < 45 or shortest_m > 135:
+                x_distances.append((shortest_distance, (x1, y1), (x2, y2), shortest_m))
+            else:
+                y_distances.append((shortest_distance, (x1, y1), (x2, y2), shortest_m))
 
     # 최빈값 거리 찾기
     allx_distances = [d[0] for d in x_distances]
@@ -342,6 +336,10 @@ def find_mode_distance_and_slope(points):
     for dist, (x1, y1), (x2, y2), m in y_distances:
         if abs(dist - modey_distance) < 2:  # 최빈값과 가까운 거리만 선택
             slopesy.append(m)
+    if len(slopesx) == 0:
+        slopesx = slopesy
+    elif len(slopesy) == 0:
+        slopesy = slopesx
     degreex = get_mode_degree(slopesx)
     degreey = get_mode_degree(slopesy)
     return modex_distance, modey_distance, degreex, degreey
@@ -363,36 +361,6 @@ def point_to_line_distance(x0, y0, x1, y1, degree):
     # 거리 공식 적용
     distance = abs(a * x0 + b * y0 + c) / math.sqrt(a**2 + b**2)
     return distance
-
-def draw_line(image, x0, y0, slope, color=(0, 255, 0), thickness=2):
-    height, width = image.shape[:2]  # 이미지 크기 가져오기
-
-    # 기울기가 무한대 (수직선)일 경우 특별 처리
-    if math.isinf(slope):
-        x1, y1 = x0, 0  # 위쪽 경계
-        x2, y2 = x0, height  # 아래쪽 경계
-    else:
-        # 직선의 방정식: y = mx + b
-        b = y0 - slope * x0  # 절편 b 계산
-
-        # 이미지 왼쪽(x=0)과 오른쪽(x=width)에서의 y 좌표 계산
-        x1, y1 = 0, int(b)
-        x2, y2 = width, int(slope * width + b)
-
-        # y 좌표가 이미지 범위를 넘어가면 조정
-        if y1 < 0:
-            y1 = 0
-            x1 = int(-b / slope) if slope != 0 else x0
-        elif y1 > height:
-            y1 = height
-            x1 = int((y1 - b) / slope)
-
-        if y2 < 0:
-            y2 = 0
-            x2 = int(-b / slope) if slope != 0 else x0
-        elif y2 > height:
-            y2 = height
-            x2 = int((y2 - b) / slope)
 
 def y_location(dots, degree, distance, tol_add=0):
     if degree > 45:
@@ -420,7 +388,7 @@ def y_location(dots, degree, distance, tol_add=0):
         y1 = temp_max_y
         for x, y in remove:
             points.remove((x, y))
-        if  len(points) > 1 and i % 3 == 2:
+        if  len(points) > 0 and i % 3 == 2:
             (temp_x1, temp_y1) = min(points, key=lambda p: p[1])
             dis = point_to_line_distance(x1, y1, temp_x1, temp_y1, degree)
             if  dis > b_tol + tol:
@@ -454,15 +422,13 @@ def x_location(dots, degree, distance, tol_add=0):
         remove = []
         temp_max_x = x1
         temp_max_y = y1
-        if  len(points) > 1 and i % 2 == 0:
-            is_add = True
-            for temp_x, temp_y in points:
-                dis = point_to_line_distance(x1, y1, temp_x, temp_y, degree)
-                if  distance - tol < dis < distance + tol:
-                    is_add = False
+        if i == 0:
+            xt = x1 + b_tol
+            for (x2, y2) in points:
+                d = point_to_line_distance(xt, y1, x2, y2, degree)
+                if d <= tol / 2:
+                    i += 1
                     break
-            if is_add:
-                i += 1
         for (x2, y2) in points:
             d = point_to_line_distance(x1, y1, x2, y2, degree)
             if d <= tol:
@@ -474,7 +440,7 @@ def x_location(dots, degree, distance, tol_add=0):
         y1 = temp_max_y
         for x, y in remove:
             points.remove((x, y))
-        if  len(points) > 1 and i % 2 == 1:
+        if  len(points) > 0 and i % 2 == 1:
             (temp_x1, temp_y1) = min(points, key=lambda p: p[0])
             dis = point_to_line_distance(x1, y1, temp_x1, temp_y1, degree)
             if  dis > b_tol + tol:
@@ -493,7 +459,7 @@ def convert_to_braille_unicode(str_input: str, json_value) -> str:
         str_output = json_value[str_input]
     return str_output
 
-def get_braille(xy_dict: dict):
+def get_braille(xy_dict: dict) -> str:
     tik = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1,2)]
     x_diff = 2
     y_diff = 3
@@ -520,34 +486,6 @@ def get_braille(xy_dict: dict):
     return braille
 
 
-
-def cluster_and_sort_points(points, eps_x=100, eps_y=100, min_samples=2):
-    """
-    점들을 가로로 긴 직사각형 기준으로 클러스터링 후 전체적으로 좌측 → 우측, 상단 → 하단 정렬
-    :param points: (x, y) 좌표 리스트
-    :param eps_x: x축 방향 거리 임계값
-    :param eps_y: y축 방향 거리 임계값
-    :param min_samples: 최소 클러스터 크기
-    :return: (클러스터링된 점 리스트, 정렬된 점 리스트)
-    """
-    points = np.array(points)  # 리스트를 numpy 배열로 변환
-
-    # 거리 행렬 변환 (x 방향과 y 방향의 거리 차이를 고려)
-    transformed_points = np.column_stack((points[:, 0] / eps_x, points[:, 1] / eps_y))
-
-    # DBSCAN 클러스터링 실행 (eps 값을 1로 설정하여 거리 기반으로 클러스터링)
-    db = DBSCAN(eps=1, min_samples=min_samples, metric='euclidean').fit(transformed_points)
-    labels = db.labels_  # 클러스터 라벨 (-1은 노이즈)
-
-    # 클러스터 ID를 점 리스트에 추가
-    clustered_points = [(tuple(point), label) for point, label in zip(points, labels)]
-
-    # 정렬: 클러스터 번호 → x좌표 → y좌표 기준 정렬
-    sorted_points = sorted(clustered_points, key=lambda p: (p[1], p[0][0], p[0][1]))
-
-    # 클러스터링된 점 리스트와 정렬된 점 리스트 반환
-    return clustered_points, [p[0] for p in sorted_points if p[1] != -1]
-
 @app.route('/convertBrailleImg', methods=['POST'])
 def process_image():
     """Flask API: 점자 이미지 업로드 후 변환"""
@@ -565,25 +503,30 @@ def process_image():
 
         # 점자 이미지 처리 (OpenCV 기반)
         filtered_braille = process_braille_image(image, loop=8, threshold=10)
+        # filtered_braille = process_braille_image(image, loop=5, threshold=6, start=-40)
+        if len(filtered_braille) > 200:
+            raise Exception('Too many Brailles')
+        elif len(filtered_braille) <= 0:
+            filtered_braille = process_braille_image(image, loop=8, threshold=10)
+
 
         # 점자 기울기 및 거리 계산
         x_d, y_d, x_g, y_g = find_mode_distance_and_slope(filtered_braille)
 
-        # 이미지 크기 조정
-        image = resize_min_size(image)
-
         # 점자 위치 정렬
         g = min(x_g, y_g)
-        y_dict = y_location(filtered_braille, g, (x_d + y_d) / 2)
-        x_dict = x_location(filtered_braille, g, (x_d + y_d) / 2)
+        if g == 0:
+            g += 0.0001
+        y_dict = y_location(filtered_braille, g, y_d)
+        x_dict = x_location(filtered_braille, g, x_d)
         xy_dict = {(x_dict[k], y_dict[k]): k for k in x_dict.keys() & y_dict.keys()}
 
         # 점자 변환 (OpenCV 기반)
         braille_text = get_braille(xy_dict)
-
         # 사람이 읽을 수 있는 점자 텍스트 반환
-        readable_braille = {"braille_text": braille_text}
-        return jsonify(readable_braille), 200
+        readable_braille = {"braille_text": braille_text.strip()}
+        response = make_response(jsonify(readable_braille), 200)
+        return response
 
     except Exception as e:
         return jsonify({"error": f"서버 오류: {str(e)}"}), 500
