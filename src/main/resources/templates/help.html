@@ -5,28 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vision Bridge - 사용법</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+        }
+        #usageTitle {
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        ol > li {
+            margin-bottom: 1.5rem;
+        }
+        .highlight {
+            color: #007bff;
+        }
+        .subtitle {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+    </style>
 </head>
 <body>
 <div class="container mt-4">
     <h3 id="usageTitle" tabindex="0">Vision Bridge 사용법 안내</h3>
     <hr aria-hidden="true">
-    <ul>
+    <ol>
         <li tabindex="0">
-            <strong>점자 입력:</strong> 점자 입력 창에 점자 내용을 입력하세요.
+            <div class="subtitle">입력 언어 선택 및 방향 전환</div>
+            - 상단 탭에서 <span class="highlight">점자</span> 또는 <span class="highlight">비점자</span>를 선택할 수 있습니다.<br>
+            - <span class="highlight">↔ 양방향 화살표</span>를 클릭하면 번역 방향이 전환됩니다.
         </li>
         <li tabindex="0">
-            <strong>언어 전환:</strong> 양방향 화살표를 클릭하면 입력 언어를 변경할 수 있습니다.
+            <div class="subtitle">입력</div>
+            - 입력창에 직접 내용을 작성할 수 있습니다.<br>
+            - 이미지나 문서를 <span class="highlight">업로드</span>하거나 <span class="highlight">드래그 앤 드롭</span>할 수 있습니다.<br>
+            - 지원 파일 형식은 <span class="highlight">.brf, 점자 이미지, .pdf, .hwp, .docx, .txt, 일반 이미지</span>입니다.
         </li>
         <li tabindex="0">
-            <strong>번역 실행:</strong> 번역 버튼을 눌러 번역 결과를 확인하세요.
+            <div class="subtitle">보조 입력 도구</div>
+            - 점자 입력 시 <span class="highlight">가상 점자 키보드</span>를 사용할 수 있습니다.
         </li>
         <li tabindex="0">
-            <strong>결과 다운로드:</strong> 비점자 -> 점자 번역 결과를 다운로드하려면 BRF 다운로드 버튼을 클릭하세요.
+            <div class="subtitle">번역 실행 및 결과 활용</div>
+            - [번역] 버튼을 클릭하면 결과가 출력됩니다.<br>
+            - 점자 결과는 <span class="highlight">BRF 파일로 다운로드</span>할 수 있습니다.<br>
+            - 비점자 결과는 <span class="highlight">음성 출력(TTS)</span>으로 재생할 수 있습니다.
         </li>
         <li tabindex="0">
-            <strong>파일 업로드:</strong> 이미지나 문서를 업로드하여 번역을 실행할 수도 있습니다.
+            <div class="subtitle">주의사항</div>
+            - 시스템은 <span class="highlight">한국어 인식에 최적화</span>되어 있습니다.<br>
+            - 텍스트 입력 시 영어 문장은 일부 인식되지만 이미지 업로드에서는 영어가 인식되지 않습니다.<br>
+            - 특수문자는 제한적으로 처리되며 복잡한 기호나 수식은 누락될 수 있습니다.
         </li>
-    </ul>
+    </ol>
     <hr aria-hidden="true">
     <p tabindex="0">
         문의사항은 <a href="mailto:visionbridge@gmail.com" aria-label="이메일 visionbridge@gmail.com으로 문의">visionbridge@gmail.com</a> 으로 이메일 부탁드립니다.
