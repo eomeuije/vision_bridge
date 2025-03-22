@@ -518,6 +518,12 @@ public class Translator2Text {
                     temp = temp.replaceAll("쳍", "체(");
                     temp = temp.replaceAll("랕", "라(");
                     temp = temp.replaceAll("욭", "요?");
+                    temp = temp.replaceAll("욯", "요.");
+                    temp = temp.replaceAll("욭", "요?");
+                    temp = temp.replaceAll("욬", "요!");
+                    temp = temp.replaceAll("옿", "오.");
+                    temp = temp.replaceAll("옽", "오?");
+                    temp = temp.replaceAll("옼", "오!");
                 }
                 if (word.charAt(j) == '⠴' && existMap == null) {
                     english = true;

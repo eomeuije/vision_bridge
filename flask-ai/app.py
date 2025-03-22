@@ -504,7 +504,7 @@ def process_image():
         # 점자 이미지 처리 (OpenCV 기반)
         filtered_braille = process_braille_image(image, loop=8, threshold=10)
         # filtered_braille = process_braille_image(image, loop=5, threshold=6, start=-40)
-        if len(filtered_braille) > 200:
+        if len(filtered_braille) > 1000:
             raise Exception('Too many Brailles')
         elif len(filtered_braille) <= 0:
             filtered_braille = process_braille_image(image, loop=8, threshold=10)
