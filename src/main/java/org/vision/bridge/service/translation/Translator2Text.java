@@ -512,6 +512,7 @@ public class Translator2Text {
                     temp = temp.replaceAll("닾", "다.");
                     temp = temp.replaceAll("갚", "가.");
                     temp = temp.replaceAll("낲", "나.");
+                    temp = temp.replaceAll("낱", "나?");
                     temp = temp.replaceAll("닡", "니?");
                     temp = temp.replaceAll("낰", "나!");
                     temp = temp.replaceAll("닽", "다(");
@@ -519,11 +520,14 @@ public class Translator2Text {
                     temp = temp.replaceAll("랕", "라(");
                     temp = temp.replaceAll("욭", "요?");
                     temp = temp.replaceAll("욯", "요.");
+                    temp = temp.replaceAll("욮", "요.");
                     temp = temp.replaceAll("욭", "요?");
                     temp = temp.replaceAll("욬", "요!");
                     temp = temp.replaceAll("옿", "오.");
                     temp = temp.replaceAll("옽", "오?");
                     temp = temp.replaceAll("옼", "오!");
+                    temp = temp.replaceAll("잪", "자.");
+                    temp = temp.replaceAll("잨", "자!");
                 }
                 if (word.charAt(j) == '⠴' && existMap == null) {
                     english = true;

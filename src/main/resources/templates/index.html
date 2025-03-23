@@ -204,13 +204,6 @@
             ? "번역 결과가 비점자로 표시됩니다."
             : "번역 결과가 점자로 표시됩니다.";
 
-        // 입력 및 출력 값 초기화
-        // 출력이 존재할 경우 입력으로 이동
-        // if (outputText.value) {
-        //     inputText.value = outputText.value;
-        // } else {
-        //     inputText.value = '';
-        // }
         inputText.value = '';
         outputText.value = '';
 
@@ -578,7 +571,83 @@
     let currentCharIndex = 0;
     let isSeeking = false;
     let isPaused = false;
-    let updateProgressInterval = null;
+    let progressUpdater = null;
+    let lastBoundaryIndex = 0;
+    let hasSpokenAtLeastOnce = false;
+    let progressFloat = 0;
+
+    function verbalizePunctuation(text) {
+        return text
+            // 괄호류
+            .replace(/\(/g, ' 괄호 열고 ')
+            .replace(/\)/g, ' 괄호 닫고 ')
+            .replace(/\[/g, ' 대괄호 열고 ')
+            .replace(/\]/g, ' 대괄호 닫고 ')
+            .replace(/\{/g, ' 중괄호 열고 ')
+            .replace(/\}/g, ' 중괄호 닫고 ')
+
+            // 문장 부호
+            .replace(/\./g, ' 마침표 ')
+            .replace(/,/g, ' 쉼표 ')
+            .replace(/!/g, ' 느낌표 ')
+            .replace(/\?/g, ' 물음표 ')
+            .replace(/:/g, ' 쌍점 ')
+            .replace(/;/g, ' 쌍반점 ')
+            .replace(/~/g, ' 물결 ')
+            .replace(/-/g, ' 하이픈 ')
+            .replace(/—/g, ' 긴 대시 ')
+            .replace(/_/g, ' 밑줄 ')
+
+            // 따옴표
+            .replace(/"/g, ' 큰따옴표 ')
+            .replace(/'/g, ' 작은따옴표 ')
+            .replace(/“|”/g, ' 큰따옴표 ')
+            .replace(/‘|’/g, ' 작은따옴표 ')
+
+            // 기타 자주 쓰이는 특수문자
+            .replace(/@/g, ' 골뱅이 ')
+            .replace(/#/g, ' 샵 ')
+            .replace(/\*/g, ' 별표 ')
+            .replace(/&/g, ' 앰퍼샌드 ')
+            .replace(/\\/g, ' 역슬래시 ')
+            .replace(/\//g, ' 슬래시 ')
+            .replace(/=/g, ' 이퀄 ')
+            .replace(/\+/g, ' 더하기 ')
+            .replace(/</g, ' 꺾쇠 열고 ')
+            .replace(/>/g, ' 꺾쇠 닫고 ')
+            .replace(/\|/g, ' 파이프 ')
+
+            // 이모지 등 제거
+            .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+
+            // 공백 정리
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function startProgressUpdater() {
+        if (progressUpdater) return;
+        progressFloat = currentCharIndex;
+        progressUpdater = setInterval(() => {
+            if (isPlaying && !isSeeking) {
+                progressFloat += 0.8;
+                currentCharIndex = Math.floor(progressFloat);
+
+                if (currentCharIndex > totalTextLength) {
+                    currentCharIndex = totalTextLength;
+                }
+                updateProgressUI();
+            }
+        }, 100);
+    }
+
+    function stopProgressUpdater() {
+        if (progressUpdater) {
+            clearInterval(progressUpdater);
+            progressUpdater = null;
+        }
+    }
 
     // TTS 재생/정지 버튼
     document.getElementById('playPauseButton').addEventListener('click', function () {
@@ -600,25 +669,28 @@
 
     // 배속 변경
     document.getElementById('voiceRate').addEventListener('change', function () {
-        let newRate = parseFloat(this.value);
+        const newRate = parseFloat(this.value);
 
-        if (isPlaying) {
-            // 현재 재생 중인 위치 저장 (2글자 앞에서 다시 시작)
-            let tempPosition = Math.max(currentPosition - 2, 0);
-
-            // 현재 음성을 중지하고, 새로운 배속으로 다시 재생
+        if (isPlaying || isPaused) {
+            // 재생 위치 유지
+            const resumeFrom = currentCharIndex;
             window.speechSynthesis.cancel();
-            startTTS(textContent, tempPosition, newRate);
-        } else if (isPaused) {
-            // 정지 상태에서 배속 변경하면, 다시 재생 시 반영되도록 설정
-            savedRate = newRate;
+
+            // 갱신된 속도로 재시작
+            isPaused = false;
+            startTTS(textContent, resumeFrom, newRate);
         }
     });
 
     // TTS 시작 함수
     function startTTS(text, position, rate = null) {
+        console.log('[TTS] startTTS 호출됨');
+        console.log('  ▶ position:', position);
+        console.log('  ▶ totalTextLength:', text.length);
+
         let playButton = document.getElementById('playPauseButton');
         let playIcon = playButton.querySelector('i');
+        hasSpokenAtLeastOnce = false;
 
         if (!isPaused) {
             window.speechSynthesis.cancel();
@@ -630,23 +702,60 @@
         }
 
         // 새로운 음성 객체 생성
-        utterance = new SpeechSynthesisUtterance(text.substring(position));
+        const cleanedText = verbalizePunctuation(text);
+        utterance = new SpeechSynthesisUtterance(cleanedText.substring(position));
         utterance.rate = rate;
         utterance.lang = 'ko-KR';
 
-        currentCharIndex = position;
         currentPosition = position;
-        textContent = text;
-        totalTextLength = text.length;
+        textContent = cleanedText;
+        totalTextLength = cleanedText.length;
         isPaused = false;
 
         // 진행률 업데이트 시작
         updateProgressUI();
         startProgressUpdater();
 
-        // 음성이 끝까지 도달했을 때 초기화
+        // 진행 위치 동기화용 boundary 이벤트 등록
+        utterance.onboundary = function (event) {
+            if (event.name === 'word') {
+                hasSpokenAtLeastOnce = true;
+                lastBoundaryIndex = position + event.charIndex;
+                currentCharIndex = lastBoundaryIndex;
+                progressFloat = currentCharIndex;
+                console.log('[TTS] onboundary: word at', event.charIndex);
+                console.log('  → lastBoundaryIndex:', lastBoundaryIndex);
+                updateProgressUI();
+            }
+        };
+
+        utterance.onstart = function () {
+            if (lastBoundaryIndex === 0) {
+                lastBoundaryIndex = position;
+                currentCharIndex = position;
+            }
+        };
+
         utterance.onend = function () {
             resetTTS();
+        };
+
+        utterance.onpause = function(event) {
+            if (event.charIndex !== undefined) {
+                const pauseIndex = position + event.charIndex;
+
+                if (pauseIndex > lastBoundaryIndex) {
+                    lastBoundaryIndex = pauseIndex;
+                    currentCharIndex = pauseIndex;
+                    currentPosition = pauseIndex;
+                    console.log('[TTS] onpause (적용됨)');
+                } else {
+                    console.log('[TTS] onpause (무시됨 - 이전 인덱스보다 작음)');
+                }
+
+                console.log('  → lastBoundaryIndex:', lastBoundaryIndex);
+                console.log('  → currentPosition:', currentPosition);
+            }
         };
 
         // 음성 재생
@@ -654,30 +763,45 @@
         isPlaying = true;
 
         // 버튼 아이콘 변경 (재생 → 정지)
-        playIcon.classList.remove("fa-play");
-        playIcon.classList.add("fa-stop");
+        updateButtonIcon(true);
     }
 
     // TTS 정지 함수
     function stopTTS() {
         if (window.speechSynthesis.speaking) {
+            console.log('[TTS] stopTTS 호출');
             window.speechSynthesis.pause();
             isPlaying = false;
             isPaused = true;
 
-            if (updateProgressInterval) {
-                clearInterval(updateProgressInterval);
-                updateProgressInterval = null;
+            if (currentCharIndex === 0 && lastBoundaryIndex === 0 && utterance) {
+                console.log('[TTS] 첫 정지, boundary 오기 전');
+                currentCharIndex = currentPosition;
+                lastBoundaryIndex = currentPosition;
             }
+
+            currentPosition = currentCharIndex;
+            console.log('  → currentCharIndex:', currentCharIndex);
+            console.log('  → lastBoundaryIndex:', lastBoundaryIndex);
+            console.log('  → currentPosition:', currentPosition);
+
             updateButtonIcon(false);
+            stopProgressUpdater();
         }
     }
 
     // TTS 다시 재생 함수
     function resumeTTS() {
+        console.log('[TTS] resumeTTS 호출');
+        console.log('  → 재생 위치:', currentPosition);
+
         if (!textContent || currentPosition >= textContent.length) return; // 번역된 텍스트가 없거나 끝에 도달했으면 종료
         let newRate = parseFloat(document.getElementById('voiceRate').value); // 현재 선택한 배속 가져오기
         window.speechSynthesis.cancel();
+        currentPosition = lastBoundaryIndex;
+        currentCharIndex = lastBoundaryIndex;
+        progressFloat = currentCharIndex;
+
         utterance = new SpeechSynthesisUtterance(textContent.substring(currentPosition));
         utterance.rate = newRate; // 변경된 배속 적용
         utterance.lang = 'ko-KR';
@@ -686,14 +810,23 @@
             stopTTS();
         };
 
+        // boundary 이벤트 다시 등록
+        utterance.onboundary = function (event) {
+            if (event.name === 'word') {
+                lastBoundaryIndex = currentPosition + event.charIndex;
+                currentCharIndex = lastBoundaryIndex;
+                //updateProgressUI();
+            }
+        };
+
         // 새롭게 재생
         window.speechSynthesis.speak(utterance);
         isPlaying = true;
         isPaused = false;
 
         // UI 업데이트
-        updateButtonIcon(true);
         startProgressUpdater();
+        updateButtonIcon(true);
     }
 
     // TTS 초기화 (완전히 정지 후 0초부터 재생)
@@ -706,11 +839,13 @@
         textContent = "";
         totalTextLength = 0;
 
-        // UI 업데이트
-        updateButtonIcon(false);
+        // 진행률 UI 즉시 초기화
         document.getElementById("ttsSeekBar").value = 0;
         document.getElementById("ttsCurrentTime").textContent = "00:00";
-        document.getElementById("ttsTotalTime").textContent = formatTime(totalTextLength);
+        document.getElementById("ttsTotalTime").textContent = "00:00";
+
+        updateButtonIcon(false);
+        stopProgressUpdater();
     }
 
     // 재생/정지 버튼 아이콘 업데이트
@@ -728,6 +863,7 @@
 
     // 진행률 바 & 시간 업데이트
     function updateProgressUI() {
+        if (totalTextLength === 0) return;
         let seekBar = document.getElementById("ttsSeekBar");
         let currentTimeLabel = document.getElementById("ttsCurrentTime");
         let totalTimeLabel = document.getElementById("ttsTotalTime");
@@ -739,19 +875,7 @@
         totalTimeLabel.textContent = formatTime(totalTextLength);
     }
 
-    // 진행률 업데이트 타이머 실행
-    function startProgressUpdater() {
-        if (updateProgressInterval) clearInterval(updateProgressInterval);
-        updateProgressInterval = setInterval(() => {
-            if (window.speechSynthesis.speaking) {
-                currentCharIndex += 6; // 대략 6글자가 1초에 해당
-                updateProgressUI();
-            } else {
-                clearInterval(updateProgressInterval);
-                updateProgressInterval = null;
-            }
-        }, 1000);
-    }
+
 
     // 텍스트 길이를 시간 형식으로 변환 (예: 00:15)
     function formatTime(charCount) {
@@ -775,10 +899,19 @@
         let seekPercent = event.target.value / 100;
         let newCharIndex = Math.round(seekPercent * totalTextLength);
 
-        // 기존 음성 정지 후 새로운 위치에서 재생
         currentCharIndex = newCharIndex;
-        startTTS(document.getElementById("outputText").value, currentCharIndex, parseFloat(document.getElementById('voiceRate').value));
+        progressFloat = newCharIndex;
+        currentPosition = newCharIndex;
+        lastBoundaryIndex = newCharIndex;
+
+        let text = document.getElementById("outputText").value;
+        let rate = parseFloat(document.getElementById('voiceRate').value);
+
+        window.speechSynthesis.cancel();
+        isPaused = false;
+        startTTS(text, newCharIndex, rate);
     });
+
 
     // 앞으로 5초 이동 버튼
     document.getElementById('skipButton').addEventListener('click', function () {
