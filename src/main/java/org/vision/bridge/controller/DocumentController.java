@@ -85,7 +85,7 @@ public class DocumentController {
                         result = hwpParser.parseHWP(file.getInputStream());
                     } else {
                         result = plainTextParser.parse(file.getInputStream());
-                        if (originalFilename.toLowerCase().endsWith(".brf")) {
+                        if (originalFilename.toLowerCase().endsWith(".brf") || originalFilename.toLowerCase().endsWith(".bbf")) {
                             result = brfParser.translateBRF2Braille(result);
                         }
                     }
