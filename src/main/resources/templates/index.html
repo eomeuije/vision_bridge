@@ -354,7 +354,7 @@
                 type = 'application/x-hwp';
             } else if (['docx'].includes(fileExtension)) {
                 type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-            } else if (['brf', 'text', 'bbf'].includes(fileExtension)) {
+            } else if (['brf', 'text'].includes(fileExtension)) {
                 type = 'application/octet-stream';
             } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
                 type = 'image/' + fileExtension;  // 이미지 파일 타입 설정
@@ -1053,6 +1053,7 @@
     // 닫기 버튼 클릭 시 팝업 닫기
     function closeKeyboard() {
         document.getElementById('brailleKeyboardPopup').style.display = 'none';
+        document.getElementById('inputText').setAttribute('inputmode', 'text');
         resetBraille();
     }
 
@@ -1095,8 +1096,8 @@
     // 입력 필드(`#inputText`]의 커서 위치에 점자 삽입
     function insertBraille(braille) {
         let textarea = document.getElementById('inputText');
+        textarea.setAttribute('inputmode', 'none');
         let cursorPos = textarea.selectionStart; // 현재 커서 위치 가져오기
-
         let text = textarea.value;
 
         // 입력값을 유지하면서 커서 위치에 점자 삽입
