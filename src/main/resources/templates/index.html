@@ -102,7 +102,7 @@
                 <span class="lang-toggle" id="brailleToText" role="tab" aria-selected="false" aria-controls="outputText" tabindex="8">점자</span>
                 <span class="lang-toggle active" id="textToBraille" role="tab" aria-selected="true" aria-controls="outputText" tabindex="9">비점자</span>
             </h4>
-            <textarea id="outputText" class="form-control" rows="7" readonly placeholder="번역 결과가 비점자로 표시됩니다." aria-label="번역 결과창" tabindex="10"></textarea>
+            <textarea id="outputText" class="form-control" rows="7" readonly placeholder="번역 결과가 비점자로 표시됩니다." aria-label="번역 결과창" tabindex="10" wrap="off"></textarea>
 
             <div class="action-buttons">
                 <!-- BRF 다운로드 버튼 -->
@@ -276,7 +276,7 @@
                 return response.text();
             })
             .then(data => {
-                document.getElementById('outputText').value = data; // 번역 결과 출력
+                setOutputText(data); // 번역 결과 출력
                 resetTTS();  // 새로운 결과가 나오면 TTS 초기화
             })
             .catch(error => {
@@ -290,6 +290,13 @@
 
     // 모바일 번역 버튼
     document.getElementById('translateButtonMobile')?.addEventListener('click', handleTranslate);
+
+    // 마지막 줄바꿈(\n 또는 \r\n)을 제거함
+    function setOutputText(data) {
+        const outputTextArea = document.getElementById('outputText');
+        let trimmedText = data.trimEnd();
+        outputTextArea.value = trimmedText;
+    }
 
     // 이미지 업로드 버튼 상태 업데이트 함수
     function updateImageUploadButton() {
