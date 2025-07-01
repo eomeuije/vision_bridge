@@ -1,5 +1,9 @@
 # vision_bridge
 ## 창원대학교 캡스톤디자인 점자번역 서비스
+
+## 기능영상
+https://drive.google.com/drive/folders/1qEBZmFf1ZhG3g7ff27t1jLDWrjb5QizK
+
 ### 실행방법
 ```txt
 build.gradle의 dependencies 다운로드 후 src/main 아래의 VisionBridgeApplication.java(class) main함수 실행
